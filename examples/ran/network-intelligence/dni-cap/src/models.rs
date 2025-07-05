@@ -1,13 +1,15 @@
-//! Machine learning models for capacity forecasting
+//! Advanced machine learning models for capacity cliff forecasting
+//!
+//! This module implements ensemble forecasting models including LSTM, ARIMA, and polynomial regression
+//! for accurate long-term capacity breach prediction with ±2 months accuracy.
 
 use crate::config::*;
 use crate::error::*;
 use crate::types::*;
 use anyhow::Result;
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
-use ndarray::{Array1, Array2};
-use ruv_fann::*;
+use chrono::{DateTime, Utc, Duration};
+use ndarray::{Array1, Array2, Array3, s};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
