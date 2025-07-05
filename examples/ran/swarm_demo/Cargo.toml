@@ -9,7 +9,34 @@ edition = "2021"
 name = "enhanced_neural_swarm_demo"
 path = "enhanced_neural_swarm_demo.rs"
 
+[[bin]]
+name = "ran_optimization_example"
+path = "ran_optimization_example.rs"
+
+[[bin]]
+name = "run_neural_evaluation"
+path = "run_neural_evaluation.rs"
+
+[[bin]]
+name = "advanced_model_validation"
+path = "advanced_model_validation.rs"
+
+[[bin]]
+name = "swarm_neural_trainer"
+path = "swarm_neural_trainer.rs"
+
+[[bin]]
+name = "standalone_neural_trainer"
+path = "standalone_neural_trainer.rs"
+
+[[bin]]
+name = "fann_data_preprocessing_demo"
+path = "fann_data_preprocessing_demo.rs"
+
 [dependencies]
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
+csv = "1.3"
+chrono = { version = "0.4", features = ["serde"] }
