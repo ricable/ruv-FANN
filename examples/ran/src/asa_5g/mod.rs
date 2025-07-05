@@ -127,7 +127,7 @@ pub enum MitigationPriority {
     Urgent,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MitigationAction {
     ParameterAdjustment,
     HandoverTrigger,
