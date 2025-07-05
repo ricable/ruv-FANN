@@ -10,6 +10,18 @@ name = "enhanced_neural_swarm_demo"
 path = "enhanced_neural_swarm_demo.rs"
 
 [[bin]]
+name = "run_evaluation"
+path = "run_evaluation.rs"
+
+[[bin]]
+name = "dashboard_server"
+path = "dashboard_server.rs"
+
+[[bin]]
+name = "simple_dashboard_server"
+path = "simple_dashboard_server.rs"
+
+[[bin]]
 name = "ran_optimization_example"
 path = "ran_optimization_example.rs"
 
