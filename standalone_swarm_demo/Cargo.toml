@@ -70,6 +70,14 @@ path = "src/bin/real_kpi_neural_swarm_demo.rs"
 name = "simple_kpi_demo"
 path = "src/bin/simple_kpi_demo.rs"
 
+[[bin]]
+name = "simple_real_data_demo"
+path = "src/bin/simple_real_data_demo.rs"
+
+[[bin]]
+name = "swarm_real_data_demo"
+path = "src/bin/swarm_real_data_demo.rs"
+
 [[bench]]
 name = "swarm_benchmark"
 harness = false

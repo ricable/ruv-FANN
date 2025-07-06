@@ -10,6 +10,8 @@ pub mod swarm;
 pub mod config;
 pub mod utils;
 pub mod performance;
+pub mod pfs; // Performance Monitoring System
+pub mod dtm; // Digital Twin Mobility System
 
 use std::time::Instant;
 use rand::{Rng, SeedableRng};
@@ -21,11 +23,21 @@ use crate::swarm::{SwarmCoordinator, SwarmParameters};
 use crate::config::SwarmConfig;
 use crate::utils::{Timer, ProgressTracker, StatUtils};
 use crate::performance::{PerformanceMetrics, ResourceMonitor};
+use crate::pfs::{PFSSystem, pfs_utils};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Enhanced Neural Swarm Demo - Standalone Modular Version");
     println!("============================================================");
     println!("🧠 Features: Advanced Neural Networks, Swarm Intelligence, RAN Optimization");
+    println!("📊 Enhanced with PFS (Performance Monitoring System)");
+    println!();
+    
+    // Initialize PFS system first
+    let runtime = tokio::runtime::Runtime::new()?;
+    let mut pfs_system = PFSSystem::new();
+    runtime.block_on(async {
+        pfs_system.start().await
+    })?;
     println!();
     
     // Load configuration
@@ -165,12 +177,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Demonstrate demand prediction
     demonstrate_demand_prediction(&mut rng)?;
     
-    // Save comprehensive results
+    // Generate comprehensive PFS system report
+    runtime.block_on(async {
+        println!("\n📊 PFS SYSTEM PERFORMANCE REPORT");
+        println!("=================================");
+        
+        let system_status = pfs_system.get_system_status().await;
+        println!("🎯 PFS System Status:");
+        println!("  ├─ Active Metrics: {}", system_status.active_metrics_count);
+        println!("  ├─ Active Agents: {}", system_status.active_agents_count);
+        println!("  ├─ Total Operations: {}", system_status.total_operations);
+        println!("  ├─ Performance Score: {:.3}", system_status.average_performance_score);
+        println!("  └─ System Uptime: {:?}", system_status.system_uptime);
+        println!();
+        
+        // Generate and display comprehensive report
+        let pfs_report = pfs_system.generate_system_report().await;
+        println!("{}", pfs_report);
+        
+        // Export PFS data
+        match pfs_system.export_system_data("json").await {
+            Ok(_) => println!("✅ PFS system data exported successfully"),
+            Err(e) => println!("⚠️ Failed to export PFS data: {}", e),
+        }
+    });
+    
+    // Save comprehensive results with PFS integration
     let summary = result.to_optimization_summary();
     save_results(&summary)?;
     
-    println!("✅ Enhanced Neural Swarm Demo completed successfully!");
-    println!("📁 Results saved to 'swarm_optimization_results.json'");
+    println!("✅ Enhanced Neural Swarm Demo with PFS completed successfully!");
+    println!("📁 Optimization results saved to 'swarm_optimization_results.json'");
+    println!("📊 PFS system data exported with comprehensive performance analytics");
     
     Ok(())
 }
