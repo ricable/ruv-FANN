@@ -207,12 +207,9 @@ impl KnowledgeDistillation {
         let hidden_size = (128.0 * config.compression_ratio) as usize; // Compressed hidden size
         let output_size = 8;
         
-        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(hidden_size, hidden_size / 2)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(hidden_size / 2, output_size)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(hidden_size, hidden_size / 2)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(hidden_size / 2, output_size)), Activation::Sigmoid);
         
         Ok(network)
     }
@@ -225,10 +222,8 @@ impl KnowledgeDistillation {
         let hidden_size = (64.0 * config.compression_ratio) as usize;
         let output_size = 5; // Number of user groups
         
-        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(hidden_size, output_size)));
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(hidden_size, output_size)), Activation::Softmax);
         
         Ok(network)
     }
@@ -241,12 +236,9 @@ impl KnowledgeDistillation {
         let hidden_size = (128.0 * config.compression_ratio) as usize;
         let output_size = 32; // Resource allocation parameters
         
-        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(hidden_size, hidden_size / 2)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(hidden_size / 2, output_size)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(input_size, hidden_size)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(hidden_size, hidden_size / 2)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(hidden_size / 2, output_size)), Activation::Sigmoid);
         
         Ok(network)
     }

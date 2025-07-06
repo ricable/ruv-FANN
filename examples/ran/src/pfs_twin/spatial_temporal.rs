@@ -548,7 +548,7 @@ impl TemporalAttention {
         
         for b in 0..batch_size {
             let batch_input = input.index_axis(Axis(0), b);
-            let batch_attended = self.self_attention(&batch_input);
+            let batch_attended = self.self_attention(&batch_input.to_owned());
             attended.index_axis_mut(Axis(0), b).assign(&batch_attended);
         }
         
@@ -951,7 +951,7 @@ impl IncrementalProcessor {
             features.clone()
         } else {
             // Process important changes
-            self.incremental_update(&important_changes.into_iter().cloned().collect(), features, adjacency)
+            self.incremental_update(&important_changes.into_iter().cloned().collect::<Vec<_>>(), features, adjacency)
         }
     }
 

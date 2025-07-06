@@ -129,6 +129,7 @@ wasm = ["no_std", "serde", "logging", "dep:wasm-bindgen", "dep:js-sys", "dep:web
 gpu = ["dep:wgpu", "dep:futures", "dep:pollster", "dep:bytemuck", "dep:tokio", "dep:async-trait", "std"]
 webgpu = ["dep:wgpu", "dep:futures", "dep:bytemuck", "wasm"]
 wasm-gpu = ["webgpu", "wasm"]
+experimental-webgpu = ["webgpu"]
 
 # Swarm integration - external features that may not be available
 ruv-swarm = []

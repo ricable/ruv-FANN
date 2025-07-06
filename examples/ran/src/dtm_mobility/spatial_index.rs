@@ -653,8 +653,9 @@ impl RTree {
             // For now, just add to root
             if let Some(root) = &mut self.root {
                 if let Some(entries) = &mut root.entries {
+                    let point_location = point.location;
                     entries.push(point);
-                    root.bounds = root.bounds.union_point(point.location);
+                    root.bounds = root.bounds.union_point(point_location);
                 }
             }
         }

@@ -39,7 +39,7 @@ pub struct QoEMetrics {
 }
 
 /// User group classifications based on service requirements
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum UserGroup {
     Premium,      // High QoE requirements
     Standard,     // Normal QoE requirements
@@ -49,7 +49,7 @@ pub enum UserGroup {
 }
 
 /// Service type categories for differentiated handling
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum ServiceType {
     VideoStreaming,
     VoiceCall,
@@ -62,7 +62,7 @@ pub enum ServiceType {
 }
 
 /// Frequency band specifications
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum FrequencyBand {
     Band700MHz,     // Long range, good penetration
     Band1800MHz,    // Balanced coverage and capacity

@@ -1,9 +1,9 @@
-use candle_core::{Device, Result, Tensor, D};
-use candle_nn::{linear, ops, VarBuilder, Module, Linear, Dropout, LayerNorm};
+use candle_core::{Device, Result, Tensor, D, IndexOp};
+use candle_nn::{linear, ops, VarBuilder, Module, Linear, Dropout, LayerNorm, layer_norm};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use rand::Rng;
-use crate::pfs_core::{NeuralNetwork, Tensor as PfsTensor, TensorOps};
+use crate::pfs_core::{NeuralNetwork, Tensor as PfsTensor, TensorOps, DenseLayer, Activation};
 
 pub mod enm_client;
 pub mod beam_search;
@@ -40,7 +40,7 @@ impl Default for ActionGeneratorConfig {
 }
 
 /// Types of healing actions that can be generated
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum HealingActionType {
     ProcessRestart,
     CellBlocking,
@@ -53,7 +53,7 @@ pub enum HealingActionType {
 }
 
 /// Healing action structure
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HealingAction {
     pub action_type: HealingActionType,
     pub target_entity: String,
@@ -62,6 +62,28 @@ pub struct HealingAction {
     pub confidence: f32,
     pub estimated_duration: u64,
     pub rollback_plan: Option<String>,
+}
+
+impl Eq for HealingAction {}
+
+impl PartialOrd for HealingAction {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for HealingAction {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Compare by priority first (higher priority first)
+        self.priority.partial_cmp(&other.priority)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .reverse()
+            .then_with(|| self.confidence.partial_cmp(&other.confidence)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .reverse())
+            .then_with(|| self.action_type.cmp(&other.action_type))
+            .then_with(|| self.target_entity.cmp(&other.target_entity))
+    }
 }
 
 /// AMOS script template
@@ -158,7 +180,7 @@ impl TransformerEncoder {
         let vs = VarBuilder::zeros(candle_core::DType::F32, device);
         
         let input_projection = linear(config.input_dim, config.hidden_dim, vs.pp("input_proj"))?;
-        let layer_norm = LayerNorm::new(config.hidden_dim, 1e-5, vs.pp("layer_norm"))?;
+        let layer_norm = layer_norm(config.hidden_dim, 1e-5, vs.pp("layer_norm"))?;
         
         let mut layers = Vec::new();
         for i in 0..config.num_layers {
@@ -201,7 +223,7 @@ impl TransformerDecoder {
         let vs = VarBuilder::zeros(candle_core::DType::F32, device);
         
         let output_projection = linear(config.hidden_dim, config.vocab_size, vs.pp("output_proj"))?;
-        let layer_norm = LayerNorm::new(config.hidden_dim, 1e-5, vs.pp("layer_norm"))?;
+        let layer_norm = layer_norm(config.hidden_dim, 1e-5, vs.pp("layer_norm"))?;
         
         let mut layers = Vec::new();
         for i in 0..config.num_layers {
@@ -271,10 +293,10 @@ impl TransformerLayer {
         let cross_attention = Some(MultiHeadAttention::new(config, vs.pp("cross_attn"))?);
         let feed_forward = FeedForward::new(config, vs.pp("ffn"))?;
         
-        let layer_norm1 = LayerNorm::new(config.hidden_dim, 1e-5, vs.pp("norm1"))?;
-        let layer_norm2 = LayerNorm::new(config.hidden_dim, 1e-5, vs.pp("norm2"))?;
-        let layer_norm3 = Some(LayerNorm::new(config.hidden_dim, 1e-5, vs.pp("norm3"))?);
-        let dropout = Dropout::new(config.dropout_prob);
+        let layer_norm1 = layer_norm(config.hidden_dim, 1e-5, vs.pp("norm1"))?;
+        let layer_norm2 = layer_norm(config.hidden_dim, 1e-5, vs.pp("norm2"))?;
+        let layer_norm3 = Some(layer_norm(config.hidden_dim, 1e-5, vs.pp("norm3"))?);
+        let dropout = Dropout::new(config.dropout_prob as f32);
         
         Ok(Self {
             self_attention,
@@ -339,7 +361,7 @@ impl MultiHeadAttention {
         let k_proj = linear(config.hidden_dim, config.hidden_dim, vs.pp("k_proj"))?;
         let v_proj = linear(config.hidden_dim, config.hidden_dim, vs.pp("v_proj"))?;
         let out_proj = linear(config.hidden_dim, config.hidden_dim, vs.pp("out_proj"))?;
-        let dropout = Dropout::new(config.dropout_prob);
+        let dropout = Dropout::new(config.dropout_prob as f32);
         
         Ok(Self {
             num_heads,
@@ -396,7 +418,7 @@ impl FeedForward {
         let ff_dim = config.hidden_dim * 4;
         let linear1 = linear(config.hidden_dim, ff_dim, vs.pp("linear1"))?;
         let linear2 = linear(ff_dim, config.hidden_dim, vs.pp("linear2"))?;
-        let dropout = Dropout::new(config.dropout_prob);
+        let dropout = Dropout::new(config.dropout_prob as f32);
         
         Ok(Self {
             linear1,
@@ -407,7 +429,7 @@ impl FeedForward {
 
     pub fn forward(&self, x: &Tensor) -> Result<Tensor> {
         let x = self.linear1.forward(x)?;
-        let x = ops::relu(&x)?;
+        let x = x.relu()?;
         let x = self.dropout.forward(&x, false)?;
         self.linear2.forward(&x)
     }
@@ -454,13 +476,16 @@ pub struct TemplateSelector {
 
 impl TemplateSelector {
     pub fn new(templates: Vec<AmosTemplate>) -> Self {
-        let network = NeuralNetwork::new(vec![256, 128, 64, templates.len()]);
+        let mut network = NeuralNetwork::new();
+        network.add_layer(Box::new(DenseLayer::new(256, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, templates.len())), Activation::Softmax);
         Self { network, templates }
     }
 
     pub fn select_template(&self, anomaly_features: &PfsTensor) -> Result<&AmosTemplate> {
         let scores = self.network.forward(anomaly_features);
-        let best_idx = scores.argmax()?;
+        let best_idx = scores.argmax().map_err(|e| candle_core::Error::Msg(e))?;
         Ok(&self.templates[best_idx])
     }
 }
@@ -485,7 +510,7 @@ impl RestconfGenerator {
             HealingActionType::ProcessRestart => {
                 ("POST".to_string(), 
                  format!("{}/restconf/operations/restart-process", self.base_url),
-                 Some(serde_json::to_string(&action.parameters)?))
+                 Some(serde_json::to_string(&action.parameters).map_err(|e| candle_core::Error::Msg(e.to_string()))?))
             },
             HealingActionType::CellBlocking => {
                 ("PATCH".to_string(),
@@ -500,7 +525,7 @@ impl RestconfGenerator {
             HealingActionType::ParameterAdjustment => {
                 ("PATCH".to_string(),
                  format!("{}/restconf/data/network-config/{}", self.base_url, action.target_entity),
-                 Some(serde_json::to_string(&action.parameters)?))
+                 Some(serde_json::to_string(&action.parameters).map_err(|e| candle_core::Error::Msg(e.to_string()))?))
             },
             _ => return Err(candle_core::Error::Msg("Unsupported action type".to_string())),
         };
@@ -537,13 +562,16 @@ pub enum ValidationSeverity {
 
 impl ActionValidator {
     pub fn new(validation_rules: Vec<ValidationRule>) -> Self {
-        let network = NeuralNetwork::new(vec![512, 256, 128, 3]); // 3 classes: valid, warning, invalid
+        let mut network = NeuralNetwork::new();
+        network.add_layer(Box::new(DenseLayer::new(512, 256)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(256, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 3)), Activation::Softmax); // 3 classes: valid, warning, invalid
         Self { network, validation_rules }
     }
 
     pub fn validate_action(&self, action: &HealingAction, context: &PfsTensor) -> Result<ValidationResult> {
         let score = self.network.forward(context);
-        let prediction = score.argmax()?;
+        let prediction = score.argmax().map_err(|e| candle_core::Error::Msg(e))?;
         
         let status = match prediction {
             0 => ValidationStatus::Valid,
@@ -551,7 +579,7 @@ impl ActionValidator {
             _ => ValidationStatus::Invalid,
         };
         
-        let confidence = score.max()?;
+        let confidence = score.max().map_err(|e| candle_core::Error::Msg(e))?;
         
         Ok(ValidationResult {
             status,

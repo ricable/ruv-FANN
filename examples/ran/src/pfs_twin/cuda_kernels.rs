@@ -89,6 +89,7 @@ pub struct DeviceMemoryPool {
 }
 
 /// Memory block on device
+#[derive(Clone)]
 pub struct DeviceMemoryBlock {
     /// Memory address
     ptr: usize,
@@ -779,10 +780,11 @@ impl GpuProfiler {
             .unwrap()
             .as_micros() as u64;
         
-        if let Some((start_time, _)) = self.events.get_mut(name) {
-            *self.events.get_mut(name).unwrap() = (*start_time, end_time);
+        if let Some(event_entry) = self.events.get_mut(name) {
+            let start_time = event_entry.0;
+            *event_entry = (start_time, end_time);
             
-            let duration = (end_time - *start_time) as f64 / 1000.0; // Convert to milliseconds
+            let duration = (end_time - start_time) as f64 / 1000.0; // Convert to milliseconds
             self.kernel_times.entry(name.to_string()).or_insert_with(Vec::new).push(duration);
         }
     }

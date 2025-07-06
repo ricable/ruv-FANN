@@ -4,6 +4,7 @@
 //! ENDC setup failures before they occur, based on ML predictions.
 
 use crate::asa_5g::*;
+use crate::integration::event_system::ComparisonOperator;
 use crate::types::*;
 use crate::{Result, RanError};
 use async_trait::async_trait;
@@ -93,7 +94,7 @@ pub enum MitigationStatus {
 }
 
 /// Strategy risk level
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum StrategyRiskLevel {
     VeryLow,
     Low,
@@ -804,7 +805,7 @@ impl IntelligentMitigationEngine {
                 ComparisonOperator::LessThan => value < condition.threshold,
                 ComparisonOperator::GreaterThanOrEqual => value >= condition.threshold,
                 ComparisonOperator::LessThanOrEqual => value <= condition.threshold,
-                ComparisonOperator::Equals => (value - condition.threshold).abs() < 0.001,
+                ComparisonOperator::Equal => (value - condition.threshold).abs() < 0.001,
                 ComparisonOperator::NotEqual => (value - condition.threshold).abs() >= 0.001,
             };
             

@@ -4,6 +4,7 @@
 //! signal quality metrics, and proactive mitigation actions.
 
 use crate::asa_5g::*;
+use crate::asa_5g::signal_analyzer::TrendDirection;
 use crate::types::*;
 use crate::{Result, RanError};
 use async_trait::async_trait;
@@ -260,7 +261,7 @@ impl EndcMonitoringService {
         let alert = Alert {
             alert_id: uuid::Uuid::new_v4().to_string(),
             timestamp: Utc::now(),
-            alert_type,
+            alert_type: alert_type.clone(),
             severity,
             ue_id,
             cell_id,

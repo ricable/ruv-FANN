@@ -5,6 +5,7 @@
 
 use crate::{Result, RanError};
 use crate::integration::*;
+use crate::integration::api_gateway::RetryPolicy;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc};
@@ -116,7 +117,7 @@ pub struct RouteConfig {
     pub source_pattern: String,
     pub target_pattern: String,
     pub conditions: Vec<RoutingCondition>,
-    pub load_balancing_strategy: LoadBalancingStrategy,
+    pub load_balancing_strategy: Box<dyn LoadBalancingStrategy>,
     pub retry_policy: RetryPolicy,
     pub circuit_breaker: CircuitBreakerConfig,
 }
@@ -226,6 +227,20 @@ pub enum WindowType {
     Tumbling,
     Sliding,
     Session { timeout_ms: u64 },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AggregationType {
+    Sum,
+    Average,
+    Min,
+    Max,
+    Count,
+    StandardDeviation,
+    Median,
+    Percentile(f64),
+    First,
+    Last,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -683,4 +698,3 @@ pub struct DataBusMetrics {
     pub error_rate: f64,
     pub throughput_messages_per_second: f64,
 }
-"#

@@ -56,10 +56,11 @@ impl EnmParser {
         let mut in_meas_value = false;
         
         loop {
-            match xml_reader.read_event(&mut self.buffer) {
+            let mut buffer = Vec::new();
+            match xml_reader.read_event_into(&mut buffer) {
                 Ok(Event::Start(ref e)) => {
                     match e.name() {
-                        b"measInfo" => {
+                        quick_xml::name::QName(b"measInfo") => {
                             in_meas_info = true;
                             current_measurement = Some(EnmMeasurement {
                                 managed_element: String::new(),
@@ -68,10 +69,10 @@ impl EnmParser {
                                 values: HashMap::new(),
                             });
                         }
-                        b"measValue" => {
+                        quick_xml::name::QName(b"measValue") => {
                             in_meas_value = true;
                         }
-                        b"measType" => {
+                        quick_xml::name::QName(b"measType") => {
                             if let Some(ref mut meas) = current_measurement {
                                 if let Some(p) = e.try_get_attribute(b"p")? {
                                     let attr_value = p.decode_and_unescape_value(&xml_reader)?;
@@ -86,13 +87,13 @@ impl EnmParser {
                 }
                 Ok(Event::End(ref e)) => {
                     match e.name() {
-                        b"measInfo" => {
+                        quick_xml::name::QName(b"measInfo") => {
                             in_meas_info = false;
                             if let Some(meas) = current_measurement.take() {
                                 measurements.push(meas);
                             }
                         }
-                        b"measValue" => {
+                        quick_xml::name::QName(b"measValue") => {
                             in_meas_value = false;
                         }
                         _ => {}
@@ -100,8 +101,8 @@ impl EnmParser {
                 }
                 Ok(Event::Text(e)) => {
                     if in_meas_value {
-                        let text = e.unescape_and_decode(&xml_reader)?;
-                        self.parse_measurement_text(&text, &mut current_measurement);
+                        let text = e.unescape()?;
+                        Self::parse_measurement_text_static(&text, &mut current_measurement);
                     }
                 }
                 Ok(Event::Eof) => break,
@@ -115,8 +116,25 @@ impl EnmParser {
         Ok(measurements)
     }
 
+    /// Parse measurement text (static version)
+    fn parse_measurement_text_static(text: &str, measurement: &mut Option<EnmMeasurement>) {
+        if let Some(ref mut meas) = measurement {
+            // Parse counter values like "pmRrcConnEstabSucc=1234"
+            if let Some(eq_pos) = text.find('=') {
+                let (name, value_str) = text.split_at(eq_pos);
+                let value_str = &value_str[1..]; // Skip '='
+                
+                let name = name.trim();
+                let value = Self::parse_value_optimized_static(value_str.trim());
+                
+                meas.values.insert(name.to_string(), value);
+            }
+        }
+    }
+
     /// Parse measurement text with optimized string handling
     fn parse_measurement_text(&mut self, text: &str, measurement: &mut Option<EnmMeasurement>) {
+        Self::parse_measurement_text_static(text, measurement);
         if let Some(ref mut meas) = measurement {
             // Parse counter values like "pmRrcConnEstabSucc=1234"
             if let Some(eq_pos) = text.find('=') {
@@ -132,8 +150,8 @@ impl EnmParser {
         }
     }
 
-    /// Parse value with type detection
-    fn parse_value_optimized(&self, value_str: &str) -> MeasurementValue {
+    /// Parse value with type detection (static version)
+    fn parse_value_optimized_static(value_str: &str) -> MeasurementValue {
         // Try integer first (most common)
         if let Ok(val) = value_str.parse::<i64>() {
             return MeasurementValue::Counter(val);
@@ -146,6 +164,11 @@ impl EnmParser {
         
         // Default to string
         MeasurementValue::String(value_str.to_string())
+    }
+
+    /// Parse value with type detection
+    fn parse_value_optimized(&self, value_str: &str) -> MeasurementValue {
+        Self::parse_value_optimized_static(value_str)
     }
 
     /// SIMD-optimized search for XML patterns

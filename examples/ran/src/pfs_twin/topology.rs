@@ -1,4 +1,5 @@
 use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
+use petgraph::visit::EdgeRef;
 use petgraph::Graph;
 use std::collections::{HashMap, HashSet};
 use ndarray::{Array2, Array1};
@@ -395,7 +396,7 @@ impl TopologyAnalyzer {
 
     /// Calculate network diameter
     pub fn calculate_diameter(&self) -> f32 {
-        let mut max_distance = 0.0;
+        let mut max_distance: f32 = 0.0;
         
         for node in self.graph.node_indices() {
             let distances = petgraph::algo::dijkstra(&self.graph, node, None, |_| 1.0);

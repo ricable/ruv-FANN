@@ -2,6 +2,7 @@
 
 use crate::{Result, RanError};
 use crate::common::{RanModel, ModelMetrics};
+use crate::pfs_core::NeuralNetwork;
 use async_trait::async_trait;
 // use ruv_fann::*;  // TODO: Add ruv_fann dependency or use alternative
 use serde::{Deserialize, Serialize};

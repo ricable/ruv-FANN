@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array3, Array4, s, Axis};
+use ndarray::{Array1, Array2, Array3, Array4, s, Axis};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
@@ -277,7 +277,7 @@ impl CustomAttentionKernel {
                     let score = q_i.dot(&k_j) * scale;
                     let exp_score = score.exp();
                     
-                    output_i = output_i + &(v_j * exp_score);
+                    output_i = output_i + &(v_j.to_owned() * exp_score);
                     denominator += exp_score;
                 }
                 

@@ -27,7 +27,7 @@ pub struct A1Policy {
 }
 
 /// Types of A1 policies
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum A1PolicyType {
     QoSAssurance,
     TrafficSteering,
@@ -379,14 +379,10 @@ impl A1PolicyGenerator {
         // Input: steering decision + context + performance metrics
         let input_size = 64;
         
-        network.add_layer(Box::new(DenseLayer::new(input_size, 128)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(128, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 16))); // Policy parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(input_size, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::Sigmoid); // Policy parameters
         
         Ok(network)
     }
@@ -395,12 +391,9 @@ impl A1PolicyGenerator {
     fn build_condition_network() -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 16))); // Condition parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::Sigmoid); // Condition parameters
         
         Ok(network)
     }
@@ -409,12 +402,9 @@ impl A1PolicyGenerator {
     fn build_action_network() -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 12))); // Action parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 12)), Activation::Sigmoid); // Action parameters
         
         Ok(network)
     }

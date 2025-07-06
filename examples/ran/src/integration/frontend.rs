@@ -1,14 +1,12 @@
-//! Comprehensive Frontend Architecture for RAN Intelligence Platform
+//! Frontend Interface for RAN Intelligence Platform
 //! 
-//! This module provides a complete Gradio-based frontend that integrates all RAN modules
-//! with interactive dashboards, real-time monitoring, and comprehensive visualization.
+//! A clean, minimal frontend implementation with proper Rust syntax
 
 use crate::{Result, RanError};
-use crate::integration::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 
 /// Frontend configuration
@@ -17,282 +15,37 @@ pub struct FrontendConfig {
     pub title: String,
     pub description: String,
     pub theme: String,
+    pub port: u16,
+    pub host: String,
     pub analytics_enabled: bool,
     pub real_time_updates: bool,
     pub max_concurrent_users: u32,
     pub session_timeout_minutes: u32,
-    pub modules: Vec<FrontendModuleConfig>,
 }
 
+/// Module configuration for frontend
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FrontendModuleConfig {
+pub struct ModuleConfig {
     pub module_id: String,
     pub display_name: String,
     pub icon: String,
     pub description: String,
     pub enabled: bool,
-    pub dashboard_components: Vec<DashboardComponent>,
-    pub input_forms: Vec<InputForm>,
-    pub visualization_types: Vec<VisualizationType>,
+    pub endpoints: Vec<String>,
 }
 
 /// Dashboard component types
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DashboardComponent {
-    MetricsCard {
-        title: String,
-        metric_key: String,
-        format: String,
-        threshold: Option<f64>,
-    },
-    LineChart {
-        title: String,
-        x_axis: String,
-        y_axis: String,
-        series: Vec<ChartSeries>,
-    },
-    BarChart {
-        title: String,
-        categories: Vec<String>,
-        values: Vec<f64>,
-    },
-    HeatMap {
-        title: String,
-        x_labels: Vec<String>,
-        y_labels: Vec<String>,
-        data: Vec<Vec<f64>>,
-    },
-    NetworkTopology {
-        title: String,
-        nodes: Vec<NetworkNode>,
-        edges: Vec<NetworkEdge>,
-    },
-    RealTimeLog {
-        title: String,
-        max_entries: usize,
-        auto_scroll: bool,
-    },
-    StatusIndicator {
-        title: String,
-        status_key: String,
-        color_mapping: HashMap<String, String>,
-    },
-    ControlPanel {
-        title: String,
-        controls: Vec<ControlElement>,
-    },
-    DataTable {
-        title: String,
-        columns: Vec<TableColumn>,
-        paginated: bool,
-        sortable: bool,
-    },
+pub enum ComponentType {
+    MetricsCard { title: String, metric_key: String },
+    LineChart { title: String, data_source: String },
+    BarChart { title: String, categories: Vec<String> },
+    StatusIndicator { title: String, status_key: String },
+    DataTable { title: String, columns: Vec<String> },
+    ControlPanel { title: String, controls: Vec<String> },
 }
 
-/// Input form definitions
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InputForm {
-    pub form_id: String,
-    pub title: String,
-    pub description: String,
-    pub fields: Vec<FormField>,
-    pub submit_endpoint: String,
-    pub validation_rules: Vec<ValidationRule>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FormField {
-    pub field_id: String,
-    pub field_type: FieldType,
-    pub label: String,
-    pub placeholder: String,
-    pub required: bool,
-    pub default_value: Option<String>,
-    pub options: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FieldType {
-    Text,
-    Number,
-    Select,
-    MultiSelect,
-    Checkbox,
-    Radio,
-    Date,
-    Time,
-    DateTime,
-    File,
-    Slider,
-    Range,
-}
-
-/// Visualization types
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum VisualizationType {
-    TimeSeries,
-    Scatter,
-    Histogram,
-    BoxPlot,
-    Violin,
-    Candlestick,
-    Sankey,
-    Treemap,
-    Sunburst,
-    Funnel,
-    Gauge,
-    Radar,
-    Parallel,
-    Geographic,
-    ThreeD,
-}
-
-/// Chart series definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChartSeries {
-    pub name: String,
-    pub color: String,
-    pub data_source: String,
-    pub aggregation: AggregationType,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AggregationType {
-    None,
-    Average,
-    Sum,
-    Count,
-    Min,
-    Max,
-    Median,
-    StandardDeviation,
-}
-
-/// Network visualization components
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NetworkNode {
-    pub id: String,
-    pub label: String,
-    pub node_type: String,
-    pub position: Option<Position>,
-    pub size: f64,
-    pub color: String,
-    pub metadata: HashMap<String, String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NetworkEdge {
-    pub id: String,
-    pub source: String,
-    pub target: String,
-    pub weight: f64,
-    pub color: String,
-    pub label: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Position {
-    pub x: f64,
-    pub y: f64,
-    pub z: Option<f64>,
-}
-
-/// Control elements
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ControlElement {
-    Button {
-        id: String,
-        label: String,
-        action: String,
-        variant: ButtonVariant,
-    },
-    Toggle {
-        id: String,
-        label: String,
-        state_key: String,
-    },
-    Slider {
-        id: String,
-        label: String,
-        min: f64,
-        max: f64,
-        step: f64,
-        value_key: String,
-    },
-    Dropdown {
-        id: String,
-        label: String,
-        options: Vec<String>,
-        value_key: String,
-    },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ButtonVariant {
-    Primary,
-    Secondary,
-    Success,
-    Warning,
-    Danger,
-    Info,
-}
-
-/// Table column definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TableColumn {
-    pub id: String,
-    pub label: String,
-    pub data_type: DataType,
-    pub sortable: bool,
-    pub filterable: bool,
-    pub width: Option<u32>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum DataType {
-    String,
-    Number,
-    Boolean,
-    Date,
-    DateTime,
-    Currency,
-    Percentage,
-}
-
-/// Validation rules
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ValidationRule {
-    pub field_id: String,
-    pub rule_type: ValidationRuleType,
-    pub message: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ValidationRuleType {
-    Required,
-    MinLength(usize),
-    MaxLength(usize),
-    Pattern(String),
-    Range(f64, f64),
-    Email,
-    Url,
-    Custom(String),
-}
-
-/// Frontend application state
-pub struct FrontendApplication {
-    config: FrontendConfig,
-    orchestrator: Arc<IntegrationOrchestrator>,
-    session_manager: Arc<SessionManager>,
-    dashboard_manager: Arc<DashboardManager>,
-    real_time_manager: Arc<RealTimeManager>,
-}
-
-/// Session management
-pub struct SessionManager {
-    active_sessions: Arc<RwLock<HashMap<String, UserSession>>>,
-}
-
+/// User session management
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserSession {
     pub session_id: String,
@@ -300,7 +53,6 @@ pub struct UserSession {
     pub created_at: DateTime<Utc>,
     pub last_activity: DateTime<Utc>,
     pub preferences: UserPreferences,
-    pub active_modules: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -308,895 +60,108 @@ pub struct UserPreferences {
     pub theme: String,
     pub default_dashboard: String,
     pub refresh_interval: u32,
-    pub notification_settings: NotificationSettings,
-    pub dashboard_layouts: HashMap<String, DashboardLayout>,
+    pub notifications_enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NotificationSettings {
-    pub email_alerts: bool,
-    pub push_notifications: bool,
-    pub alert_thresholds: HashMap<String, f64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DashboardLayout {
-    pub layout_id: String,
-    pub name: String,
-    pub components: Vec<LayoutComponent>,
-    pub grid_size: GridSize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LayoutComponent {
-    pub component_id: String,
-    pub position: GridPosition,
-    pub size: GridSize,
-    pub component_type: DashboardComponent,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GridPosition {
-    pub x: u32,
-    pub y: u32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GridSize {
-    pub width: u32,
-    pub height: u32,
-}
-
-/// Dashboard management
-pub struct DashboardManager {
-    dashboards: Arc<RwLock<HashMap<String, Dashboard>>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Dashboard {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub module_id: String,
-    pub components: Vec<DashboardComponent>,
-    pub layout: DashboardLayout,
-    pub auto_refresh: bool,
-    pub refresh_interval: u32,
-}
-
-/// Real-time data management
-pub struct RealTimeManager {
-    websocket_connections: Arc<RwLock<HashMap<String, WebSocketConnection>>>,
-    data_streams: Arc<RwLock<HashMap<String, DataStream>>>,
-}
-
-#[derive(Debug, Clone)]
-pub struct WebSocketConnection {
-    pub connection_id: String,
-    pub session_id: String,
-    pub subscribed_streams: Vec<String>,
-    pub last_ping: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DataStream {
-    pub stream_id: String,
-    pub module_id: String,
-    pub data_type: String,
-    pub update_frequency: u32,
-    pub subscribers: Vec<String>,
-    pub last_update: DateTime<Utc>,
+/// Frontend application state
+pub struct FrontendApplication {
+    config: FrontendConfig,
+    sessions: Arc<RwLock<HashMap<String, UserSession>>>,
+    modules: Arc<RwLock<HashMap<String, ModuleConfig>>>,
 }
 
 impl FrontendApplication {
-    pub fn new(config: FrontendConfig, orchestrator: Arc<IntegrationOrchestrator>) -> Self {
+    /// Create new frontend application
+    pub fn new(config: FrontendConfig) -> Self {
         Self {
             config,
-            orchestrator,
-            session_manager: Arc::new(SessionManager::new()),
-            dashboard_manager: Arc::new(DashboardManager::new()),
-            real_time_manager: Arc::new(RealTimeManager::new()),
+            sessions: Arc::new(RwLock::new(HashMap::new())),
+            modules: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
-    /// Generate complete frontend application
-    pub async fn generate_gradio_app(&self) -> Result<String> {
-        let mut app_code = String::new();
-        
-        // Import statements
-        app_code.push_str(&self.generate_imports());
-        
-        // Application configuration
-        app_code.push_str(&self.generate_app_config());
-        
-        // Module dashboards
-        app_code.push_str(&self.generate_module_dashboards().await?);
-        
-        // Main interface
-        app_code.push_str(&self.generate_main_interface().await?);
-        
-        // Real-time updates
-        app_code.push_str(&self.generate_real_time_updates());
-        
-        // Launch configuration
-        app_code.push_str(&self.generate_launch_config());
-        
-        Ok(app_code)
+
+    /// Initialize the frontend application
+    pub async fn initialize(&self) -> Result<()> {
+        self.setup_default_modules().await?;
+        self.start_session_cleanup().await?;
+        Ok(())
     }
-    
-    fn generate_imports(&self) -> String {
-        r#"
-import gradio as gr
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-import requests
-import json
-import asyncio
-import websockets
-from datetime import datetime, timedelta
-import time
-import threading
-from typing import Dict, List, Any, Optional
-import logging
-from dataclasses import dataclass
-from enum import Enum
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-"#.to_string()
-    }
-    
-    fn generate_app_config(&self) -> String {
-        format!(r#"
-# RAN Intelligence Platform Configuration
-APP_CONFIG = {{
-    "title": "{}",
-    "description": "{}",
-    "theme": "{}",
-    "analytics_enabled": {},
-    "real_time_updates": {},
-    "max_concurrent_users": {},
-    "session_timeout_minutes": {},
-    "api_base_url": "http://localhost:8080",
-    "websocket_url": "ws://localhost:8080/ws",
-}}
-
-# Module configurations
-MODULE_CONFIGS = {}
-
-# Dashboard themes
-THEMES = {{
-    "default": gr.themes.Default(),
-    "soft": gr.themes.Soft(),
-    "monochrome": gr.themes.Monochrome(),
-    "glass": gr.themes.Glass(),
-}}
-
-"#, 
-            self.config.title,
-            self.config.description,
-            self.config.theme,
-            self.config.analytics_enabled,
-            self.config.real_time_updates,
-            self.config.max_concurrent_users,
-            self.config.session_timeout_minutes,
-            serde_json::to_string_pretty(&self.config.modules).unwrap_or_default()
-        )
-    }
-    
-    async fn generate_module_dashboards(&self) -> Result<String> {
-        let mut dashboards = String::new();
+    /// Setup default modules
+    async fn setup_default_modules(&self) -> Result<()> {
+        let mut modules = self.modules.write().await;
         
-        // Generate dashboard for each module
-        for module_config in &self.config.modules {
-            if module_config.enabled {
-                dashboards.push_str(&self.generate_module_dashboard(module_config).await?);
+        // ASA 5G Module
+        modules.insert("asa_5g".to_string(), ModuleConfig {
+            module_id: "asa_5g".to_string(),
+            display_name: "ASA 5G".to_string(),
+            icon: "📡".to_string(),
+            description: "5G network analysis and prediction".to_string(),
+            enabled: true,
+            endpoints: vec!["/api/asa_5g/status".to_string(), "/api/asa_5g/metrics".to_string()],
+        });
+
+        // PFS Core Module
+        modules.insert("pfs_core".to_string(), ModuleConfig {
+            module_id: "pfs_core".to_string(),
+            display_name: "PFS Core".to_string(),
+            icon: "🧠".to_string(),
+            description: "Pattern-Free Spectral analysis core".to_string(),
+            enabled: true,
+            endpoints: vec!["/api/pfs_core/status".to_string(), "/api/pfs_core/analysis".to_string()],
+        });
+
+        // PFS Twin Module
+        modules.insert("pfs_twin".to_string(), ModuleConfig {
+            module_id: "pfs_twin".to_string(),
+            display_name: "PFS Twin".to_string(),
+            icon: "🔬".to_string(),
+            description: "Digital twin simulation and modeling".to_string(),
+            enabled: true,
+            endpoints: vec!["/api/pfs_twin/status".to_string(), "/api/pfs_twin/simulation".to_string()],
+        });
+
+        // RIC Conflict Module
+        modules.insert("ric_conflict".to_string(), ModuleConfig {
+            module_id: "ric_conflict".to_string(),
+            display_name: "RIC Conflict".to_string(),
+            icon: "⚠️".to_string(),
+            description: "RAN Intelligent Controller conflict resolution".to_string(),
+            enabled: true,
+            endpoints: vec!["/api/ric_conflict/status".to_string(), "/api/ric_conflict/conflicts".to_string()],
+        });
+
+        Ok(())
+    }
+
+    /// Start session cleanup task
+    async fn start_session_cleanup(&self) -> Result<()> {
+        let sessions = Arc::clone(&self.sessions);
+        let timeout = self.config.session_timeout_minutes;
+        
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                Self::cleanup_expired_sessions(&sessions, timeout).await;
             }
-        }
-        
-        Ok(dashboards)
-    }
-    
-    async fn generate_module_dashboard(&self, module_config: &FrontendModuleConfig) -> Result<String> {
-        let mut dashboard = String::new();
-        
-        // Dashboard class definition
-        dashboard.push_str(&format!(r#"
-class {}Dashboard:
-    def __init__(self):
-        self.module_id = "{}"
-        self.display_name = "{}"
-        self.description = "{}"
-        self.api_client = APIClient()
-        self.real_time_data = {{}}
-        self.last_update = datetime.now()
-    
-    def create_dashboard(self):
-        """Create the main dashboard interface"""
-        with gr.Blocks(title=self.display_name, theme=THEMES[APP_CONFIG["theme"]]) as dashboard:
-            gr.Markdown(f"# {{self.display_name}}")
-            gr.Markdown(f"{{self.description}}")
-            
-            # Status indicators
-            self.create_status_section()
-            
-            # Metrics cards
-            self.create_metrics_section()
-            
-            # Visualization tabs
-            self.create_visualization_tabs()
-            
-            # Control panel
-            self.create_control_panel()
-            
-            # Data tables
-            self.create_data_tables()
-            
-            # Real-time updates
-            if APP_CONFIG["real_time_updates"]:
-                self.setup_real_time_updates()
-        
-        return dashboard
-    
-    def create_status_section(self):
-        """Create status indicator section"""
-        with gr.Row():
-            with gr.Column(scale=1):
-                gr.Markdown("## System Status")
-                self.status_indicator = gr.HTML(
-                    value=self.get_status_html(),
-                    elem_id="status-indicator"
-                )
-    
-    def create_metrics_section(self):
-        """Create metrics cards section"""
-        with gr.Row():
-"#, 
-            self.to_class_name(&module_config.module_id),
-            module_config.module_id,
-            module_config.display_name,
-            module_config.description
-        ));
-        
-        // Generate metrics cards
-        for (i, component) in module_config.dashboard_components.iter().enumerate() {
-            if let DashboardComponent::MetricsCard { title, metric_key, format, threshold } = component {
-                dashboard.push_str(&format!(r#"
-            with gr.Column(scale=1):
-                gr.Markdown("### {}")
-                self.metric_{} = gr.Number(
-                    value=0,
-                    label="{}",
-                    interactive=False,
-                    elem_id="metric-{}"
-                )
-"#, title, i, metric_key, i));
-            }
-        }
-        
-        // Generate visualization tabs
-        dashboard.push_str(&self.generate_visualization_tabs(module_config));
-        
-        // Generate control panel
-        dashboard.push_str(&self.generate_control_panel(module_config));
-        
-        // Generate data methods
-        dashboard.push_str(&self.generate_data_methods(module_config));
-        
-        // Close class definition
-        dashboard.push_str("\n\n");
-        
-        Ok(dashboard)
-    }
-    
-    fn generate_visualization_tabs(&self, module_config: &FrontendModuleConfig) -> String {
-        let mut tabs = String::new();
-        
-        tabs.push_str(r#"
-    def create_visualization_tabs(self):
-        """Create visualization tabs"""
-        with gr.Tabs():
-"#);
-        
-        for (i, viz_type) in module_config.visualization_types.iter().enumerate() {
-            let tab_name = format!("{:?}", viz_type);
-            tabs.push_str(&format!(r#"
-            with gr.TabItem("{}"):
-                self.create_{}_visualization()
-"#, tab_name, tab_name.to_lowercase()));
-        }
-        
-        tabs.push_str("\n");
-        
-        // Generate visualization methods
-        for viz_type in &module_config.visualization_types {
-            tabs.push_str(&self.generate_visualization_method(viz_type));
-        }
-        
-        tabs
-    }
-    
-    fn generate_visualization_method(&self, viz_type: &VisualizationType) -> String {
-        let method_name = format!("{:?}", viz_type).to_lowercase();
-        
-        match viz_type {
-            VisualizationType::TimeSeries => {
-                format!(r#"
-    def create_{}_visualization(self):
-        """Create time series visualization"""
-        with gr.Row():
-            with gr.Column():
-                self.timeseries_plot = gr.Plot(
-                    value=self.create_timeseries_chart(),
-                    label="Time Series Data"
-                )
-                
-                # Time range selector
-                with gr.Row():
-                    self.time_range = gr.Dropdown(
-                        choices=["1H", "6H", "1D", "1W", "1M"],
-                        value="1D",
-                        label="Time Range"
-                    )
-                    self.auto_refresh = gr.Checkbox(
-                        value=True,
-                        label="Auto Refresh"
-                    )
-    
-    def create_timeseries_chart(self):
-        """Create time series chart"""
-        # Generate sample data
-        dates = pd.date_range(start='2024-01-01', periods=100, freq='H')
-        data = np.random.randn(100).cumsum()
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=dates,
-            y=data,
-            mode='lines+markers',
-            name='Metric'
-        ))
-        
-        fig.update_layout(
-            title='Time Series Data',
-            xaxis_title='Time',
-            yaxis_title='Value',
-            hovermode='x unified'
-        )
-        
-        return fig
-"#, method_name)
-            }
-            VisualizationType::Scatter => {
-                format!(r#"
-    def create_{}_visualization(self):
-        """Create scatter plot visualization"""
-        with gr.Row():
-            with gr.Column():
-                self.scatter_plot = gr.Plot(
-                    value=self.create_scatter_chart(),
-                    label="Scatter Plot"
-                )
-    
-    def create_scatter_chart(self):
-        """Create scatter chart"""
-        x = np.random.randn(100)
-        y = np.random.randn(100)
-        
-        fig = px.scatter(
-            x=x, y=y,
-            title="Scatter Plot",
-            labels={{'x': 'X Axis', 'y': 'Y Axis'}}
-        )
-        
-        return fig
-"#, method_name)
-            }
-            _ => {
-                format!(r#"
-    def create_{}_visualization(self):
-        """Create {} visualization"""
-        with gr.Row():
-            with gr.Column():
-                self.{}_plot = gr.Plot(
-                    value=self.create_{}_chart(),
-                    label="{} Chart"
-                )
-    
-    def create_{}_chart(self):
-        """Create {} chart"""
-        # Placeholder implementation
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=['A', 'B', 'C'], y=[1, 2, 3]))
-        fig.update_layout(title="{} Chart")
-        return fig
-"#, method_name, format!("{:?}", viz_type), method_name, method_name, format!("{:?}", viz_type), method_name, format!("{:?}", viz_type), format!("{:?}", viz_type))
-            }
-        }
-    }
-    
-    fn generate_control_panel(&self, module_config: &FrontendModuleConfig) -> String {
-        let mut control_panel = String::new();
-        
-        control_panel.push_str(r#"
-    def create_control_panel(self):
-        """Create control panel"""
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("## Control Panel")
-                
-                # Module-specific controls
-                self.create_module_controls()
-                
-                # Common controls
-                with gr.Row():
-                    self.start_btn = gr.Button("Start", variant="primary")
-                    self.stop_btn = gr.Button("Stop", variant="secondary")
-                    self.reset_btn = gr.Button("Reset", variant="secondary")
-                    self.export_btn = gr.Button("Export Data", variant="secondary")
-    
-    def create_module_controls(self):
-        """Create module-specific controls"""
-        pass  # Override in subclasses
-"#);
-        
-        control_panel
-    }
-    
-    fn generate_data_methods(&self, module_config: &FrontendModuleConfig) -> String {
-        format!(r#"
-    def get_status_html(self):
-        """Get status indicator HTML"""
-        status = self.api_client.get_module_status(self.module_id)
-        color = "green" if status.get("healthy", False) else "red"
-        return f'<div style="color: {{color}}; font-size: 18px; font-weight: bold;">{{status.get("status", "Unknown")}}</div>'
-    
-    def update_metrics(self):
-        """Update metrics display"""
-        metrics = self.api_client.get_module_metrics(self.module_id)
-        # Update metric displays
-        return metrics
-    
-    def refresh_data(self):
-        """Refresh all data"""
-        self.last_update = datetime.now()
-        return self.update_metrics()
-    
-    def export_data(self):
-        """Export data to CSV"""
-        data = self.api_client.get_module_data(self.module_id)
-        df = pd.DataFrame(data)
-        filename = f"{{self.module_id}}_data_{{datetime.now().strftime('%Y%m%d_%H%M%S')}}.csv"
-        df.to_csv(filename, index=False)
-        return f"Data exported to {{filename}}"
-"#)
-    }
-    
-    async fn generate_main_interface(&self) -> Result<String> {
-        let mut main_interface = String::new();
-        
-        main_interface.push_str(r#"
-# API Client for backend communication
-class APIClient:
-    def __init__(self):
-        self.base_url = APP_CONFIG["api_base_url"]
-        self.session = requests.Session()
-    
-    def get_module_status(self, module_id: str) -> Dict:
-        """Get module status"""
-        try:
-            response = self.session.get(f"{self.base_url}/modules/{module_id}/status")
-            return response.json() if response.status_code == 200 else {"healthy": False, "status": "Unknown"}
-        except Exception as e:
-            logger.error(f"Error getting module status: {e}")
-            return {"healthy": False, "status": "Error"}
-    
-    def get_module_metrics(self, module_id: str) -> Dict:
-        """Get module metrics"""
-        try:
-            response = self.session.get(f"{self.base_url}/modules/{module_id}/metrics")
-            return response.json() if response.status_code == 200 else {}
-        except Exception as e:
-            logger.error(f"Error getting module metrics: {e}")
-            return {}
-    
-    def get_module_data(self, module_id: str) -> List[Dict]:
-        """Get module data"""
-        try:
-            response = self.session.get(f"{self.base_url}/modules/{module_id}/data")
-            return response.json() if response.status_code == 200 else []
-        except Exception as e:
-            logger.error(f"Error getting module data: {e}")
-            return []
+        });
 
-# Main application interface
-class RANIntelligenceApp:
-    def __init__(self):
-        self.api_client = APIClient()
-        self.module_dashboards = {}
-        self.setup_modules()
-    
-    def setup_modules(self):
-        """Setup all module dashboards"""
-"#);
-        
-        // Initialize module dashboards
-        for module_config in &self.config.modules {
-            if module_config.enabled {
-                let class_name = self.to_class_name(&module_config.module_id);
-                main_interface.push_str(&format!(r#"
-        self.module_dashboards["{}"] = {}Dashboard()
-"#, module_config.module_id, class_name));
-            }
-        }
-        
-        main_interface.push_str(r#"
-    
-    def create_main_interface(self):
-        """Create the main application interface"""
-        with gr.Blocks(
-            title=APP_CONFIG["title"],
-            theme=THEMES[APP_CONFIG["theme"]],
-            analytics_enabled=APP_CONFIG["analytics_enabled"]
-        ) as app:
-            # Header
-            gr.Markdown(f"# {APP_CONFIG['title']}")
-            gr.Markdown(f"{APP_CONFIG['description']}")
-            
-            # System overview
-            self.create_system_overview()
-            
-            # Module tabs
-            with gr.Tabs():
-                # Overview tab
-                with gr.TabItem("🏠 Overview"):
-                    self.create_overview_dashboard()
-                
-                # Module-specific tabs
-"#);
-        
-        // Add tabs for each module
-        for module_config in &self.config.modules {
-            if module_config.enabled {
-                main_interface.push_str(&format!(r#"
-                with gr.TabItem("{} {}"):
-                    self.module_dashboards["{}"].create_dashboard()
-"#, module_config.icon, module_config.display_name, module_config.module_id));
-            }
-        }
-        
-        main_interface.push_str(r#"
-                
-                # Settings tab
-                with gr.TabItem("⚙️ Settings"):
-                    self.create_settings_panel()
-        
-        return app
-    
-    def create_system_overview(self):
-        """Create system overview section"""
-        with gr.Row():
-            with gr.Column(scale=1):
-                gr.Markdown("## System Health")
-                self.system_status = gr.HTML(
-                    value=self.get_system_status_html(),
-                    elem_id="system-status"
-                )
-            
-            with gr.Column(scale=2):
-                gr.Markdown("## Active Modules")
-                self.active_modules = gr.HTML(
-                    value=self.get_active_modules_html(),
-                    elem_id="active-modules"
-                )
-    
-    def create_overview_dashboard(self):
-        """Create overview dashboard"""
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("## System Metrics")
-                
-                # System-wide metrics
-                with gr.Row():
-                    self.total_requests = gr.Number(
-                        value=0,
-                        label="Total Requests",
-                        interactive=False
-                    )
-                    self.avg_response_time = gr.Number(
-                        value=0,
-                        label="Avg Response Time (ms)",
-                        interactive=False
-                    )
-                    self.error_rate = gr.Number(
-                        value=0,
-                        label="Error Rate (%)",
-                        interactive=False
-                    )
-                
-                # System performance chart
-                self.system_performance_chart = gr.Plot(
-                    value=self.create_system_performance_chart(),
-                    label="System Performance"
-                )
-                
-                # Module status table
-                self.module_status_table = gr.Dataframe(
-                    value=self.get_module_status_table(),
-                    headers=["Module", "Status", "Uptime", "Requests", "Errors"],
-                    label="Module Status"
-                )
-    
-    def create_settings_panel(self):
-        """Create settings panel"""
-        with gr.Row():
-            with gr.Column():
-                gr.Markdown("## Application Settings")
-                
-                # Theme selection
-                self.theme_selector = gr.Dropdown(
-                    choices=list(THEMES.keys()),
-                    value=APP_CONFIG["theme"],
-                    label="Theme"
-                )
-                
-                # Refresh interval
-                self.refresh_interval = gr.Slider(
-                    minimum=1,
-                    maximum=60,
-                    value=10,
-                    step=1,
-                    label="Refresh Interval (seconds)"
-                )
-                
-                # Real-time updates
-                self.real_time_toggle = gr.Checkbox(
-                    value=APP_CONFIG["real_time_updates"],
-                    label="Enable Real-time Updates"
-                )
-                
-                # Export settings
-                with gr.Row():
-                    self.export_format = gr.Dropdown(
-                        choices=["CSV", "JSON", "Excel"],
-                        value="CSV",
-                        label="Export Format"
-                    )
-                    self.export_all_btn = gr.Button("Export All Data")
-    
-    def get_system_status_html(self):
-        """Get system status HTML"""
-        try:
-            response = self.api_client.session.get(f"{self.api_client.base_url}/system/health")
-            if response.status_code == 200:
-                health = response.json()
-                status = health.get("overall_status", "Unknown")
-                color = "green" if status == "Healthy" else "orange" if status == "Degraded" else "red"
-                return f'<div style="color: {color}; font-size: 24px; font-weight: bold; text-align: center;">{status}</div>'
-            else:
-                return '<div style="color: red; font-size: 24px; font-weight: bold; text-align: center;">Offline</div>'
-        except Exception:
-            return '<div style="color: red; font-size: 24px; font-weight: bold; text-align: center;">Connection Error</div>'
-    
-    def get_active_modules_html(self):
-        """Get active modules HTML"""
-        modules_html = ""
-        for module_id, dashboard in self.module_dashboards.items():
-            status = self.api_client.get_module_status(module_id)
-            color = "green" if status.get("healthy", False) else "red"
-            modules_html += f'<div style="margin: 5px; padding: 10px; border: 1px solid {color}; border-radius: 5px;">'
-            modules_html += f'<strong>{dashboard.display_name}</strong> - <span style="color: {color};">{status.get("status", "Unknown")}</span>'
-            modules_html += '</div>'
-        return modules_html
-    
-    def create_system_performance_chart(self):
-        """Create system performance chart"""
-        # Generate sample data
-        time_range = pd.date_range(start='2024-01-01', periods=24, freq='H')
-        cpu_usage = np.random.uniform(20, 80, 24)
-        memory_usage = np.random.uniform(30, 70, 24)
-        
-        fig = make_subplots(
-            rows=2, cols=1,
-            subplot_titles=('CPU Usage (%)', 'Memory Usage (%)'),
-            vertical_spacing=0.1
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=time_range, y=cpu_usage, name='CPU Usage', line=dict(color='blue')),
-            row=1, col=1
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=time_range, y=memory_usage, name='Memory Usage', line=dict(color='red')),
-            row=2, col=1
-        )
-        
-        fig.update_layout(
-            title='System Performance (Last 24 Hours)',
-            showlegend=True,
-            height=600
-        )
-        
-        return fig
-    
-    def get_module_status_table(self):
-        """Get module status table data"""
-        data = []
-        for module_id, dashboard in self.module_dashboards.items():
-            status = self.api_client.get_module_status(module_id)
-            metrics = self.api_client.get_module_metrics(module_id)
-            
-            data.append([
-                dashboard.display_name,
-                status.get("status", "Unknown"),
-                status.get("uptime", "0s"),
-                metrics.get("requests_processed", 0),
-                metrics.get("error_count", 0)
-            ])
-        
-        return data
-"#);
-        
-        Ok(main_interface)
+        Ok(())
     }
-    
-    fn generate_real_time_updates(&self) -> String {
-        r#"
-# Real-time WebSocket client
-class WebSocketClient:
-    def __init__(self, url: str):
-        self.url = url
-        self.websocket = None
-        self.running = False
-        self.callbacks = {}
-    
-    async def connect(self):
-        """Connect to WebSocket server"""
-        try:
-            self.websocket = await websockets.connect(self.url)
-            self.running = True
-            logger.info(f"Connected to WebSocket: {self.url}")
-        except Exception as e:
-            logger.error(f"Failed to connect to WebSocket: {e}")
-    
-    async def listen(self):
-        """Listen for WebSocket messages"""
-        while self.running and self.websocket:
-            try:
-                message = await self.websocket.recv()
-                data = json.loads(message)
-                
-                # Route message to appropriate callback
-                if data.get("type") in self.callbacks:
-                    await self.callbacks[data["type"]](data)
-                    
-            except websockets.exceptions.ConnectionClosed:
-                logger.info("WebSocket connection closed")
-                break
-            except Exception as e:
-                logger.error(f"Error handling WebSocket message: {e}")
-    
-    def subscribe(self, message_type: str, callback):
-        """Subscribe to a message type"""
-        self.callbacks[message_type] = callback
-    
-    async def send(self, message: dict):
-        """Send message to WebSocket server"""
-        if self.websocket:
-            await self.websocket.send(json.dumps(message))
 
-# Real-time update manager
-class RealTimeUpdateManager:
-    def __init__(self, app: 'RANIntelligenceApp'):
-        self.app = app
-        self.websocket_client = WebSocketClient(APP_CONFIG["websocket_url"])
-        self.update_thread = None
-        self.setup_subscriptions()
-    
-    def setup_subscriptions(self):
-        """Setup WebSocket subscriptions"""
-        self.websocket_client.subscribe("module_metrics", self.handle_module_metrics)
-        self.websocket_client.subscribe("system_health", self.handle_system_health)
-        self.websocket_client.subscribe("alert", self.handle_alert)
-    
-    async def handle_module_metrics(self, data: dict):
-        """Handle module metrics update"""
-        module_id = data.get("module_id")
-        if module_id in self.app.module_dashboards:
-            # Update dashboard metrics
-            dashboard = self.app.module_dashboards[module_id]
-            dashboard.real_time_data = data.get("metrics", {})
-    
-    async def handle_system_health(self, data: dict):
-        """Handle system health update"""
-        # Update system status displays
-        pass
-    
-    async def handle_alert(self, data: dict):
-        """Handle alert notification"""
-        # Show alert notification
-        logger.warning(f"Alert: {data.get('message', 'Unknown alert')}")
-    
-    def start_real_time_updates(self):
-        """Start real-time updates"""
-        if APP_CONFIG["real_time_updates"]:
-            self.update_thread = threading.Thread(target=self.run_websocket_client)
-            self.update_thread.daemon = True
-            self.update_thread.start()
-    
-    def run_websocket_client(self):
-        """Run WebSocket client in separate thread"""
-        async def run():
-            await self.websocket_client.connect()
-            await self.websocket_client.listen()
+    /// Cleanup expired sessions
+    async fn cleanup_expired_sessions(
+        sessions: &Arc<RwLock<HashMap<String, UserSession>>>,
+        timeout_minutes: u32,
+    ) {
+        let mut sessions_guard = sessions.write().await;
+        let cutoff = Utc::now() - chrono::Duration::minutes(timeout_minutes as i64);
         
-        asyncio.run(run())
-"#.to_string()
+        sessions_guard.retain(|_, session| session.last_activity > cutoff);
     }
-    
-    fn generate_launch_config(&self) -> String {
-        format!(r#"
-# Application launch configuration
-def create_app():
-    """Create and configure the main application"""
-    app = RANIntelligenceApp()
-    gradio_app = app.create_main_interface()
-    
-    # Setup real-time updates
-    if APP_CONFIG["real_time_updates"]:
-        real_time_manager = RealTimeUpdateManager(app)
-        real_time_manager.start_real_time_updates()
-    
-    return gradio_app
 
-# Launch the application
-if __name__ == "__main__":
-    app = create_app()
-    
-    # Launch with custom configuration
-    app.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
-        debug=False,
-        auth=None,  # Add authentication if needed
-        ssl_verify=False,
-        max_threads=APP_CONFIG["max_concurrent_users"],
-        show_error=True,
-        quiet=False,
-        show_tips=True,
-        height=800,
-        width="100%",
-        favicon_path=None,
-        app_kwargs={{
-            "title": APP_CONFIG["title"],
-            "description": APP_CONFIG["description"],
-        }}
-    )
-"#)
-    }
-    
-    fn to_class_name(&self, module_id: &str) -> String {
-        module_id.split('_')
-            .map(|s| s.chars().next().unwrap().to_uppercase().chain(s.chars().skip(1)).collect::<String>())
-            .collect::<Vec<String>>()
-            .join("")
-    }
-}
-
-impl SessionManager {
-    pub fn new() -> Self {
-        Self {
-            active_sessions: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-    
+    /// Create a new user session
     pub async fn create_session(&self, user_id: String) -> Result<String> {
         let session_id = uuid::Uuid::new_v4().to_string();
         let session = UserSession {
@@ -1205,82 +170,165 @@ impl SessionManager {
             created_at: Utc::now(),
             last_activity: Utc::now(),
             preferences: UserPreferences::default(),
-            active_modules: Vec::new(),
         };
-        
-        let mut sessions = self.active_sessions.write().await;
+
+        let mut sessions = self.sessions.write().await;
         sessions.insert(session_id.clone(), session);
-        
+
         Ok(session_id)
     }
-    
+
+    /// Get session by ID
     pub async fn get_session(&self, session_id: &str) -> Result<Option<UserSession>> {
-        let sessions = self.active_sessions.read().await;
+        let sessions = self.sessions.read().await;
         Ok(sessions.get(session_id).cloned())
     }
-    
+
+    /// Update session activity
     pub async fn update_session_activity(&self, session_id: &str) -> Result<()> {
-        let mut sessions = self.active_sessions.write().await;
+        let mut sessions = self.sessions.write().await;
         if let Some(session) = sessions.get_mut(session_id) {
             session.last_activity = Utc::now();
         }
         Ok(())
     }
-}
 
-impl DashboardManager {
-    pub fn new() -> Self {
-        Self {
-            dashboards: Arc::new(RwLock::new(HashMap::new())),
-        }
+    /// Get all active modules
+    pub async fn get_modules(&self) -> Result<Vec<ModuleConfig>> {
+        let modules = self.modules.read().await;
+        Ok(modules.values().cloned().collect())
     }
-    
-    pub async fn create_dashboard(&self, dashboard: Dashboard) -> Result<()> {
-        let mut dashboards = self.dashboards.write().await;
-        dashboards.insert(dashboard.id.clone(), dashboard);
-        Ok(())
-    }
-    
-    pub async fn get_dashboard(&self, dashboard_id: &str) -> Result<Option<Dashboard>> {
-        let dashboards = self.dashboards.read().await;
-        Ok(dashboards.get(dashboard_id).cloned())
-    }
-}
 
-impl RealTimeManager {
-    pub fn new() -> Self {
-        Self {
-            websocket_connections: Arc::new(RwLock::new(HashMap::new())),
-            data_streams: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-    
-    pub async fn add_connection(&self, connection: WebSocketConnection) -> Result<()> {
-        let mut connections = self.websocket_connections.write().await;
-        connections.insert(connection.connection_id.clone(), connection);
-        Ok(())
-    }
-    
-    pub async fn create_data_stream(&self, stream: DataStream) -> Result<()> {
-        let mut streams = self.data_streams.write().await;
-        streams.insert(stream.stream_id.clone(), stream);
-        Ok(())
-    }
-}
+    /// Generate HTML dashboard
+    pub async fn generate_dashboard_html(&self) -> Result<String> {
+        let modules = self.get_modules().await?;
+        
+        let html = format!(r#"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+        .container {{ max-width: 1200px; margin: 0 auto; }}
+        .header {{ background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .modules-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }}
+        .module-card {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .module-header {{ display: flex; align-items: center; margin-bottom: 15px; }}
+        .module-icon {{ font-size: 24px; margin-right: 10px; }}
+        .module-title {{ font-size: 18px; font-weight: bold; }}
+        .module-description {{ color: #666; margin-bottom: 15px; }}
+        .status-indicator {{ padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }}
+        .status-active {{ background-color: #d4edda; color: #155724; }}
+        .status-inactive {{ background-color: #f8d7da; color: #721c24; }}
+        .metrics {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }}
+        .metric {{ text-align: center; padding: 10px; background-color: #f8f9fa; border-radius: 4px; }}
+        .metric-value {{ font-size: 18px; font-weight: bold; color: #007bff; }}
+        .metric-label {{ font-size: 12px; color: #666; }}
+    </style>
+    <script>
+        function refreshData() {{
+            window.location.reload();
+        }}
+        
+        setInterval(refreshData, 30000); // Refresh every 30 seconds
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{}</h1>
+            <p>{}</p>
+            <button onclick="refreshData()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                Refresh Data
+            </button>
+        </div>
+        
+        <div class="modules-grid">
+            {}
+        </div>
+    </div>
+</body>
+</html>
+"#, 
+            self.config.title,
+            self.config.title,
+            self.config.description,
+            self.generate_module_cards(&modules).await?
+        );
 
-impl Default for UserPreferences {
-    fn default() -> Self {
-        Self {
-            theme: "default".to_string(),
-            default_dashboard: "overview".to_string(),
-            refresh_interval: 10,
-            notification_settings: NotificationSettings {
-                email_alerts: false,
-                push_notifications: true,
-                alert_thresholds: HashMap::new(),
-            },
-            dashboard_layouts: HashMap::new(),
+        Ok(html)
+    }
+
+    /// Generate module cards HTML
+    async fn generate_module_cards(&self, modules: &[ModuleConfig]) -> Result<String> {
+        let mut cards = String::new();
+
+        for module in modules {
+            if module.enabled {
+                let status = if module.enabled { "active" } else { "inactive" };
+                let status_class = if module.enabled { "status-active" } else { "status-inactive" };
+                
+                cards.push_str(&format!(r#"
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-icon">{}</span>
+                        <span class="module-title">{}</span>
+                    </div>
+                    <div class="module-description">{}</div>
+                    <div class="status-indicator {}">
+                        Status: {}
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-value">--</div>
+                            <div class="metric-label">Requests</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">--</div>
+                            <div class="metric-label">Latency (ms)</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">--</div>
+                            <div class="metric-label">Errors</div>
+                        </div>
+                    </div>
+                </div>
+                "#, module.icon, module.display_name, module.description, status_class, status.to_uppercase()));
+            }
         }
+
+        Ok(cards)
+    }
+
+    /// Generate API endpoints info
+    pub async fn get_api_info(&self) -> Result<serde_json::Value> {
+        let modules = self.get_modules().await?;
+        
+        let mut api_info = serde_json::Map::new();
+        api_info.insert("title".to_string(), serde_json::Value::String(self.config.title.clone()));
+        api_info.insert("description".to_string(), serde_json::Value::String(self.config.description.clone()));
+        api_info.insert("version".to_string(), serde_json::Value::String("1.0.0".to_string()));
+        
+        let mut endpoints = serde_json::Map::new();
+        for module in &modules {
+            let mut module_endpoints = Vec::new();
+            for endpoint in &module.endpoints {
+                module_endpoints.push(serde_json::Value::String(endpoint.clone()));
+            }
+            endpoints.insert(module.module_id.clone(), serde_json::Value::Array(module_endpoints));
+        }
+        
+        api_info.insert("modules".to_string(), serde_json::Value::Object(endpoints));
+        
+        Ok(serde_json::Value::Object(api_info))
+    }
+
+    /// Get frontend configuration
+    pub fn get_config(&self) -> &FrontendConfig {
+        &self.config
     }
 }
 
@@ -1290,12 +338,59 @@ impl Default for FrontendConfig {
             title: "RAN Intelligence Platform".to_string(),
             description: "AI-powered RAN Intelligence & Automation Platform".to_string(),
             theme: "default".to_string(),
+            port: 8080,
+            host: "0.0.0.0".to_string(),
             analytics_enabled: true,
             real_time_updates: true,
             max_concurrent_users: 100,
             session_timeout_minutes: 30,
-            modules: Vec::new(),
         }
     }
 }
-"#
+
+impl Default for UserPreferences {
+    fn default() -> Self {
+        Self {
+            theme: "default".to_string(),
+            default_dashboard: "overview".to_string(),
+            refresh_interval: 30,
+            notifications_enabled: true,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_frontend_application_creation() {
+        let config = FrontendConfig::default();
+        let app = FrontendApplication::new(config);
+        assert!(app.initialize().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_session_management() {
+        let config = FrontendConfig::default();
+        let app = FrontendApplication::new(config);
+        
+        let session_id = app.create_session("test_user".to_string()).await.unwrap();
+        assert!(!session_id.is_empty());
+        
+        let session = app.get_session(&session_id).await.unwrap();
+        assert!(session.is_some());
+        assert_eq!(session.unwrap().user_id, "test_user");
+    }
+
+    #[tokio::test]
+    async fn test_module_setup() {
+        let config = FrontendConfig::default();
+        let app = FrontendApplication::new(config);
+        app.initialize().await.unwrap();
+        
+        let modules = app.get_modules().await.unwrap();
+        assert!(!modules.is_empty());
+        assert!(modules.iter().any(|m| m.module_id == "asa_5g"));
+    }
+}

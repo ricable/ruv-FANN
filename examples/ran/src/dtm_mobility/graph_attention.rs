@@ -213,13 +213,14 @@ impl CellTransitionGraph {
     
     /// Add cell node to graph
     pub fn add_cell(&mut self, cell_id: String, position: (f64, f64), cell_type: CellType) {
+        let coverage_radius = self.calculate_coverage_radius(&cell_type);
         let node = GraphNode {
             id: cell_id.clone(),
             features: self.extract_cell_features(&cell_id, position, &cell_type),
             position,
             metadata: NodeMetadata {
                 cell_type,
-                coverage_radius: self.calculate_coverage_radius(&cell_type),
+                coverage_radius,
                 signal_strength: -80.0, // Default RSRP
                 load_stats: CellLoadMetrics::default(),
                 interference_level: 0.3,
@@ -244,6 +245,9 @@ impl CellTransitionGraph {
         let count = from_transitions.entry(to_cell.to_string()).or_insert(0.0);
         *count += 1.0;
         
+        // Extract features before getting mutable reference to avoid borrow conflict
+        let edge_features = self.extract_edge_features(from_cell, to_cell);
+        
         // Add or update edge
         if let Some(edges) = self.edges.get_mut(from_cell) {
             // Find existing edge
@@ -257,7 +261,7 @@ impl CellTransitionGraph {
                     source: from_cell.to_string(),
                     target: to_cell.to_string(),
                     weight: 1.0,
-                    features: self.extract_edge_features(from_cell, to_cell),
+                    features: edge_features,
                     transition_count: 1,
                     last_transition: Instant::now(),
                 };

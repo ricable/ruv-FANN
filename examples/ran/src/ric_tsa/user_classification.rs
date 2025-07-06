@@ -218,14 +218,12 @@ impl UserClassifier {
         
         // Hidden layers
         for &hidden_size in &config.hidden_sizes {
-            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)));
-            network.add_layer(Box::new(Activation::ReLU));
+            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)), Activation::ReLU);
             prev_size = hidden_size;
         }
         
         // Output layer with softmax for classification
-        network.add_layer(Box::new(DenseLayer::new(prev_size, config.num_classes)));
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(prev_size, config.num_classes)), Activation::Softmax);
         
         Ok(network)
     }
@@ -235,16 +233,11 @@ impl UserClassifier {
         let mut network = NeuralNetwork::new();
         
         // Autoencoder-like architecture for behavior pattern detection
-        network.add_layer(Box::new(DenseLayer::new(config.feature_size, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 16))); // Bottleneck
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(16, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, config.num_classes)));
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(config.feature_size, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::ReLU); // Bottleneck
+        network.add_layer(Box::new(DenseLayer::new(16, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, config.num_classes)), Activation::Softmax);
         
         Ok(network)
     }
@@ -254,12 +247,9 @@ impl UserClassifier {
         let mut network = NeuralNetwork::new();
         
         // Network optimized for service prediction
-        network.add_layer(Box::new(DenseLayer::new(config.feature_size, 128)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(128, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 8))); // Service types
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(config.feature_size, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 8)), Activation::Softmax); // Service types
         
         Ok(network)
     }
@@ -270,12 +260,9 @@ impl UserClassifier {
         
         // LSTM-like architecture for temporal patterns
         let temporal_input_size = config.feature_size * 10; // 10 time steps
-        network.add_layer(Box::new(DenseLayer::new(temporal_input_size, 128)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(128, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, config.num_classes)));
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(temporal_input_size, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, config.num_classes)), Activation::Softmax);
         
         Ok(network)
     }
@@ -286,26 +273,20 @@ impl UserClassifier {
         
         // Traffic pattern extractor
         let mut traffic_extractor = NeuralNetwork::new();
-        traffic_extractor.add_layer(Box::new(DenseLayer::new(10, 32)));
-        traffic_extractor.add_layer(Box::new(Activation::ReLU));
-        traffic_extractor.add_layer(Box::new(DenseLayer::new(32, 16)));
-        traffic_extractor.add_layer(Box::new(Activation::ReLU));
+        traffic_extractor.add_layer(Box::new(DenseLayer::new(10, 32)), Activation::ReLU);
+        traffic_extractor.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::ReLU);
         extractors.insert("traffic".to_string(), Arc::new(RwLock::new(traffic_extractor)));
         
         // QoE sensitivity extractor
         let mut qoe_extractor = NeuralNetwork::new();
-        qoe_extractor.add_layer(Box::new(DenseLayer::new(8, 16)));
-        qoe_extractor.add_layer(Box::new(Activation::ReLU));
-        qoe_extractor.add_layer(Box::new(DenseLayer::new(16, 8)));
-        qoe_extractor.add_layer(Box::new(Activation::ReLU));
+        qoe_extractor.add_layer(Box::new(DenseLayer::new(8, 16)), Activation::ReLU);
+        qoe_extractor.add_layer(Box::new(DenseLayer::new(16, 8)), Activation::ReLU);
         extractors.insert("qoe".to_string(), Arc::new(RwLock::new(qoe_extractor)));
         
         // Mobility pattern extractor
         let mut mobility_extractor = NeuralNetwork::new();
-        mobility_extractor.add_layer(Box::new(DenseLayer::new(6, 12)));
-        mobility_extractor.add_layer(Box::new(Activation::ReLU));
-        mobility_extractor.add_layer(Box::new(DenseLayer::new(12, 8)));
-        mobility_extractor.add_layer(Box::new(Activation::ReLU));
+        mobility_extractor.add_layer(Box::new(DenseLayer::new(6, 12)), Activation::ReLU);
+        mobility_extractor.add_layer(Box::new(DenseLayer::new(12, 8)), Activation::ReLU);
         extractors.insert("mobility".to_string(), Arc::new(RwLock::new(mobility_extractor)));
         
         Ok(extractors)
@@ -386,7 +367,7 @@ impl UserClassifier {
         if let Some(hist) = user_hist {
             let throughputs: Vec<f32> = hist.qoe_history.iter().map(|q| q.throughput).collect();
             let avg_throughput = throughputs.iter().sum::<f32>() / throughputs.len() as f32;
-            let peak_throughput = throughputs.iter().fold(0.0, |a, &b| a.max(b));
+            let peak_throughput = throughputs.iter().fold(0.0f32, |a, &b| a.max(b));
             
             // Calculate variance
             let mean = avg_throughput;
@@ -692,8 +673,8 @@ impl UserClassifier {
     /// Calculate classification confidence
     fn calculate_classification_confidence(&self, probabilities: &HashMap<UserGroup, f32>) -> f32 {
         let values: Vec<f32> = probabilities.values().cloned().collect();
-        let max_prob = values.iter().fold(0.0, |a, &b| a.max(b));
-        let second_max = values.iter().filter(|&&x| x < max_prob).fold(0.0, |a, &b| a.max(b));
+        let max_prob = values.iter().fold(0.0f32, |a, &b| a.max(b));
+        let second_max = values.iter().filter(|&&x| x < max_prob).fold(0.0f32, |a, &b| a.max(b));
         
         // Confidence based on margin between top two predictions
         (max_prob - second_max).clamp(0.0, 1.0)

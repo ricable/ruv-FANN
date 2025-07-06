@@ -1,4 +1,4 @@
-use crate::afm_detect::tensor_ops::{DType, Device, Result, Tensor, Module, VarBuilder, Linear};
+use crate::afm_detect::tensor_ops::{DType, Device, Result, Tensor, Module, VarBuilder, Linear, AdamW};
 
 /// Autoencoder for reconstruction-based anomaly detection
 pub struct AutoencoderDetector {

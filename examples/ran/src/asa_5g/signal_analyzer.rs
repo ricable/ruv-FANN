@@ -266,7 +266,7 @@ impl AdvancedSignalAnalyzer {
         let mut data_lock = self.historical_data.write().await;
         let ue_key = measurement.ue_id.0.clone();
         
-        data_lock.entry(ue_key).or_insert_with(Vec::new).push(measurement);
+        data_lock.entry(ue_key.clone()).or_insert_with(Vec::new).push(measurement);
         
         // Keep only recent measurements (last 24 hours)
         if let Some(measurements) = data_lock.get_mut(&ue_key) {

@@ -167,14 +167,12 @@ impl QoEPredictor {
         
         // Hidden layers with residual connections
         for &hidden_size in &config.hidden_sizes {
-            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)));
-            network.add_layer(Box::new(Activation::ReLU));
+            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)), Activation::ReLU);
             prev_size = hidden_size;
         }
         
         // Output layer for QoE metrics
-        network.add_layer(Box::new(DenseLayer::new(prev_size, config.output_size)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(prev_size, config.output_size)), Activation::Sigmoid);
         
         Ok(network)
     }
@@ -184,10 +182,8 @@ impl QoEPredictor {
         let mut network = NeuralNetwork::new();
         
         // Multi-head attention mechanism
-        network.add_layer(Box::new(DenseLayer::new(config.input_size, config.input_size)));
-        network.add_layer(Box::new(Activation::Tanh));
-        network.add_layer(Box::new(DenseLayer::new(config.input_size, config.attention_heads)));
-        network.add_layer(Box::new(Activation::Softmax));
+        network.add_layer(Box::new(DenseLayer::new(config.input_size, config.input_size)), Activation::Tanh);
+        network.add_layer(Box::new(DenseLayer::new(config.input_size, config.attention_heads)), Activation::Softmax);
         
         Ok(network)
     }
@@ -198,12 +194,9 @@ impl QoEPredictor {
         
         // LSTM-like architecture for temporal patterns
         let temporal_size = config.input_size * config.sequence_length;
-        network.add_layer(Box::new(DenseLayer::new(temporal_size, 128)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(128, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, config.output_size)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(temporal_size, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, config.output_size)), Activation::Sigmoid);
         
         Ok(network)
     }
@@ -249,13 +242,11 @@ impl QoEPredictor {
         
         let mut prev_size = config.input_size;
         for &hidden_size in &hidden_sizes {
-            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)));
-            network.add_layer(Box::new(Activation::ReLU));
+            network.add_layer(Box::new(DenseLayer::new(prev_size, hidden_size)), Activation::ReLU);
             prev_size = hidden_size;
         }
         
-        network.add_layer(Box::new(DenseLayer::new(prev_size, config.output_size)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(prev_size, config.output_size)), Activation::Sigmoid);
         
         Ok(network)
     }

@@ -298,8 +298,8 @@ impl IntegrationOrchestrator {
     
     /// Initialize all registered modules
     pub async fn initialize_all(&self) -> Result<()> {
-        let modules = self.modules.read().await;
-        for (module_id, module) in modules.iter() {
+        let mut modules = self.modules.write().await;
+        for (module_id, module) in modules.iter_mut() {
             match module.initialize(&self.config).await {
                 Ok(_) => {
                     tracing::info!("Module {} initialized successfully", module_id);

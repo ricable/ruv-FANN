@@ -823,9 +823,12 @@ impl MultiAgentSimulationNetwork {
     }
 
     fn update_agent_strategies(&self, state: &mut MultiAgentState) {
+        // Clone the agents for reference during updates
+        let agents_snapshot = state.agents.clone();
+        
         for agent in &mut state.agents {
             // Update strategy based on current utility and other agents' strategies
-            let strategy_update = self.calculate_strategy_update(agent, &state.agents);
+            let strategy_update = self.calculate_strategy_update(agent, &agents_snapshot);
             
             for (i, update) in strategy_update.iter().enumerate() {
                 if i < agent.current_strategy.len() {
@@ -835,7 +838,7 @@ impl MultiAgentSimulationNetwork {
             }
             
             // Update utility based on new strategy
-            agent.utility = self.calculate_agent_utility(agent, &state.agents);
+            agent.utility = self.calculate_agent_utility(agent, &agents_snapshot);
         }
         
         // Update global utility

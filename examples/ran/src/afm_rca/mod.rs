@@ -59,6 +59,9 @@ pub mod what_if_simulator;
 // pub mod ericsson_specific;   // TODO: Implement Ericsson-specific analysis
 
 use crate::pfs_twin::{PfsTwin, NetworkElement, NetworkElementType};
+use crate::afm_rca::causal_inference::{CausalInferenceNetwork, StructuralCausalModel, CausalDiscovery, InterventionEngine, ConfoundingDetector};
+use crate::afm_rca::neural_ode::{NeuralODESystem, NeuralODEFunc, ODESolverConfig, ParameterSensitivityAnalyzer, ContinuousDynamicsModel, AdjointSolver};
+use crate::afm_rca::what_if_simulator::{WhatIfSimulator, CounterfactualGenerator, ScenarioEngine, ImpactAnalyzer, SimulationCache, ConfidenceEstimator};
 
 /// Main AFM Root Cause Analysis engine
 #[derive(Debug)]
@@ -81,53 +84,47 @@ pub struct AFMRootCauseAnalyzer {
     confidence_tracker: ConfidenceTracker,
 }
 
-/// Causal inference network for discovering cause-effect relationships
-#[derive(Debug)]
-pub struct CausalInferenceNetwork {
-    /// Structural causal model
-    structural_model: StructuralCausalModel,
-    /// Causal discovery algorithm
-    discovery_engine: CausalDiscovery,
-    /// Intervention engine for do-calculus
-    intervention_engine: InterventionEngine,
-    /// Learned causal graph
-    causal_graph: DiGraph<CausalNode, CausalEdge>,
-    /// Variable embeddings
-    variable_embeddings: Embedding,
-    /// Causal strength predictor
-    strength_predictor: Linear,
-    /// Confounding detector
-    confounding_detector: ConfoundingDetector,
+// Missing type definitions
+#[derive(Debug, Clone)]
+pub struct CausalStrengthScorer {
+    pub weights: Array2<f32>,
+    pub threshold: f32,
 }
 
-/// Neural ODE system for continuous dynamics modeling
-#[derive(Debug)]
-pub struct NeuralODESystem {
-    /// Main neural ODE function
-    ode_func: NeuralODEFunc,
-    /// ODE solver configuration
-    solver_config: ODESolverConfig,
-    /// System state dimensions
-    state_dim: usize,
-    /// Parameter sensitivity analyzer
-    sensitivity_analyzer: ParameterSensitivityAnalyzer,
-    /// Continuous dynamics model
-    dynamics_model: ContinuousDynamicsModel,
-    /// Adjoint method for efficient gradients
-    adjoint_solver: AdjointSolver,
+#[derive(Debug, Clone)]
+pub struct EvidenceAggregator {
+    pub aggregation_weights: Array1<f32>,
+    pub confidence_threshold: f32,
 }
 
-/// What-if simulator for counterfactual analysis
-#[derive(Debug)]
-pub struct WhatIfSimulator {
-    /// Counterfactual generator
-    counterfactual_generator: CounterfactualGenerator,
-    /// Scenario engine
-    scenario_engine: ScenarioEngine,
-    /// Impact analyzer
-    impact_analyzer: ImpactAnalyzer,
-    /// Simulation cache for efficiency
-    simulation_cache: SimulationCache,
+#[derive(Debug, Clone)]
+pub struct RankingNetwork {
+    pub layers: Vec<Array2<f32>>,
+    pub activation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RANParameterAnalyzer {
+    pub parameter_weights: HashMap<String, f32>,
+    pub analysis_threshold: f32,
+}
+
+#[derive(Debug, Clone)]
+pub struct PathLossImpactModeler {
+    pub model_coefficients: Array1<f32>,
+    pub frequency_bands: Vec<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransportLinkAnalyzer {
+    pub link_weights: HashMap<String, f32>,
+    pub bandwidth_thresholds: Vec<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EricssonKPIMapper {
+    pub kpi_mappings: HashMap<String, String>,
+    pub normalization_factors: HashMap<String, f32>,
 }
 
 /// Hypothesis ranking system
@@ -143,6 +140,28 @@ pub struct HypothesisRanker {
     ranking_network: RankingNetwork,
 }
 
+impl HypothesisRanker {
+    pub fn new(
+        strength_scorer: CausalStrengthScorer,
+        confidence_estimator: ConfidenceEstimator,
+        evidence_aggregator: EvidenceAggregator,
+        ranking_network: RankingNetwork,
+    ) -> Self {
+        Self {
+            strength_scorer,
+            confidence_estimator,
+            evidence_aggregator,
+            ranking_network,
+        }
+    }
+
+    pub fn rank_hypotheses(&self, hypotheses: &mut Vec<RootCauseHypothesis>) -> Result<(), String> {
+        // Simple ranking based on confidence score for now
+        hypotheses.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+        Ok(())
+    }
+}
+
 /// Ericsson-specific analysis components
 #[derive(Debug)]
 pub struct EricssonSpecificAnalyzer {
@@ -154,6 +173,27 @@ pub struct EricssonSpecificAnalyzer {
     transport_analyzer: TransportLinkAnalyzer,
     /// Ericsson KPI mapper
     kpi_mapper: EricssonKPIMapper,
+}
+
+impl EricssonSpecificAnalyzer {
+    pub fn new(
+        ran_analyzer: RANParameterAnalyzer,
+        path_loss_modeler: PathLossImpactModeler,
+        transport_analyzer: TransportLinkAnalyzer,
+        kpi_mapper: EricssonKPIMapper,
+    ) -> Self {
+        Self {
+            ran_analyzer,
+            path_loss_modeler,
+            transport_analyzer,
+            kpi_mapper,
+        }
+    }
+
+    pub fn analyze_ericsson_specific(&self, data: &[f32]) -> Result<Vec<String>, String> {
+        // Placeholder implementation
+        Ok(vec!["Ericsson-specific analysis complete".to_string()])
+    }
 }
 
 /// Causal node in the causal graph
@@ -247,7 +287,7 @@ pub struct EricssonMetadata {
 }
 
 /// Criticality levels for Ericsson parameters
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum CriticalityLevel {
     Low,
     Medium,
@@ -917,7 +957,7 @@ impl AFMRootCauseAnalyzer {
         &self,
         insights: &EricssonInsights,
     ) -> f32 {
-        let mut factor = 1.0;
+        let mut factor: f32 = 1.0;
         
         // Adjust based on RAN analysis quality
         if insights.ran_analysis.cell_impacts.len() > 10 {
@@ -934,7 +974,7 @@ impl AFMRootCauseAnalyzer {
             factor *= 1.1; // High utilization = more deterministic
         }
         
-        factor.min(1.2) // Cap at 20% boost
+        factor.min(1.2f32) // Cap at 20% boost
     }
 
     /// Estimate hypothesis confidence
@@ -1117,7 +1157,7 @@ impl AFMRootCauseAnalyzer {
         let obs_data = observations.to_vec2::<f32>()?;
         let cause_data = &obs_data[candidate.variable_idx];
         
-        let mut max_correlation = 0.0;
+        let mut max_correlation: f32 = 0.0;
         
         for &affected_idx in &candidate.affected_variables {
             let effect_data = &obs_data[affected_idx];

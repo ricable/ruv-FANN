@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, Axis};
+use ndarray::{Array1, Array2, Array3, ArrayView1, ArrayView2, Axis, s};
 use std::collections::HashMap;
 use crate::pfs_twin::{SparseMatrix, NetworkElement, NetworkEdge, EdgeType};
 
@@ -257,7 +257,7 @@ impl RecurrentCell {
         let new_gate = self.tanh(&(new_concat.dot(&params.w_new) + &params.b_new));
         
         // Final hidden state
-        let one_minus_update = Array1::ones(update_gate.len()) - &update_gate;
+        let one_minus_update: Array1<f32> = Array1::ones(update_gate.len()) - &update_gate;
         &update_gate * hidden + &one_minus_update * &new_gate
     }
 

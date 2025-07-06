@@ -7,6 +7,8 @@ use crate::asa_5g::*;
 use crate::common::{RanModel, ModelMetrics, FeatureEngineer};
 use crate::types::*;
 use crate::{Result, RanError};
+use crate::pfs_core::{NeuralNetwork, DenseLayer, Activation};
+use ruv_fann::ActivationFunction;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc, Timelike, Datelike};
 // use ruv_fann::*;  // TODO: Add ruv_fann dependency or use alternative
@@ -70,16 +72,30 @@ impl EndcFailurePredictor {
     
     /// Initialize the neural network with the given configuration
     pub async fn initialize(&self, network_config: &EndcNetworkConfig) -> Result<()> {
-        let mut network = NeuralNetwork::new(
-            network_config.input_size,
-            &network_config.hidden_layers,
-            network_config.output_size,
-        ).map_err(|e| RanError::ModelError(format!("Failed to create neural network: {}", e)))?;
+        let mut network = NeuralNetwork::new();
         
-        // Configure training parameters
-        network.set_learning_rate(network_config.learning_rate);
-        network.set_activation_function_hidden(network_config.activation_function);
-        network.set_activation_function_output(ActivationFunction::Sigmoid);
+        // Add input layer
+        network.add_layer(
+            Box::new(DenseLayer::new(network_config.input_size as usize, network_config.hidden_layers[0] as usize)),
+            Activation::ReLU
+        );
+        
+        // Add hidden layers
+        for i in 0..network_config.hidden_layers.len() - 1 {
+            network.add_layer(
+                Box::new(DenseLayer::new(network_config.hidden_layers[i] as usize, network_config.hidden_layers[i + 1] as usize)),
+                Activation::ReLU
+            );
+        }
+        
+        // Add output layer
+        network.add_layer(
+            Box::new(DenseLayer::new(
+                network_config.hidden_layers[network_config.hidden_layers.len() - 1] as usize,
+                network_config.output_size as usize
+            )),
+            Activation::Sigmoid
+        );
         
         // Initialize weights randomly
         network.randomize_weights(-0.1, 0.1);

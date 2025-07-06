@@ -241,16 +241,12 @@ impl MacScheduler {
         let input_size = 64; // Comprehensive feature set
         
         // Multi-layer network for resource allocation
-        network.add_layer(Box::new(DenseLayer::new(input_size, 256)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(256, 128)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(128, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
+        network.add_layer(Box::new(DenseLayer::new(input_size, 256)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(256, 128)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(128, 64)), Activation::ReLU);
         
         // Output: PRB allocation + MCS + MIMO layers + power
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::Sigmoid);
         
         Ok(network)
     }
@@ -259,12 +255,9 @@ impl MacScheduler {
     fn build_qos_network(config: &MacSchedulerConfig) -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 16))); // QoS parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::Sigmoid); // QoS parameters
         
         Ok(network)
     }
@@ -273,12 +266,9 @@ impl MacScheduler {
     fn build_power_network(config: &MacSchedulerConfig) -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 8))); // Power control parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 8)), Activation::Sigmoid); // Power control parameters
         
         Ok(network)
     }
@@ -287,12 +277,9 @@ impl MacScheduler {
     fn build_beam_network(config: &MacSchedulerConfig) -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 12))); // Beam forming parameters
-        network.add_layer(Box::new(Activation::Tanh)); // For directional parameters
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 12)), Activation::Tanh); // Beam forming parameters - for directional parameters
         
         Ok(network)
     }
@@ -301,12 +288,9 @@ impl MacScheduler {
     fn build_ca_network(config: &MacSchedulerConfig) -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 16))); // CA parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 16)), Activation::Sigmoid); // CA parameters
         
         Ok(network)
     }
@@ -315,12 +299,9 @@ impl MacScheduler {
     fn build_interference_network(config: &MacSchedulerConfig) -> Result<NeuralNetwork, Box<dyn std::error::Error>> {
         let mut network = NeuralNetwork::new();
         
-        network.add_layer(Box::new(DenseLayer::new(32, 64)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(64, 32)));
-        network.add_layer(Box::new(Activation::ReLU));
-        network.add_layer(Box::new(DenseLayer::new(32, 8))); // Interference parameters
-        network.add_layer(Box::new(Activation::Sigmoid));
+        network.add_layer(Box::new(DenseLayer::new(32, 64)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(64, 32)), Activation::ReLU);
+        network.add_layer(Box::new(DenseLayer::new(32, 8)), Activation::Sigmoid); // Interference parameters
         
         Ok(network)
     }

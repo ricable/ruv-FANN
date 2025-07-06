@@ -766,7 +766,7 @@ impl UserClusterer {
         let mut db_sum = 0.0;
         
         for i in 0..k {
-            let mut max_ratio = 0.0;
+            let mut max_ratio: f32 = 0.0;
             
             for j in 0..k {
                 if i != j {
@@ -776,7 +776,7 @@ impl UserClusterer {
                     
                     if d_ij > 0.0 {
                         let ratio = (s_i + s_j) / d_ij;
-                        max_ratio = max_ratio.max(ratio);
+                        max_ratio = max_ratio.max(ratio as f32);
                     }
                 }
             }
@@ -784,7 +784,7 @@ impl UserClusterer {
             db_sum += max_ratio;
         }
         
-        Ok(db_sum / k as f64)
+        Ok((db_sum / k as f32) as f64)
     }
     
     /// Calculate inertia (within-cluster sum of squares)
@@ -1115,7 +1115,7 @@ impl UserClusterer {
     ) -> Result<HashMap<String, usize>, String> {
         // Simplified consensus clustering
         // In practice, this would use more sophisticated methods
-        clustering_results.into_iter().next().unwrap_or_else(HashMap::new).into_iter().collect::<Result<HashMap<String, usize>, _>>().map_err(|_| "Consensus clustering failed".to_string())
+        Ok(clustering_results.into_iter().next().unwrap_or_else(HashMap::new))
     }
 }
 

@@ -171,14 +171,14 @@ impl FeatureExtractor {
         match column.data_type() {
             arrow::datatypes::DataType::Float32 => {
                 let array = column.as_any().downcast_ref::<Float32Array>()?;
-                array.value(row_idx) as f64
+                Some(array.value(row_idx) as f64)
             }
             arrow::datatypes::DataType::Int64 => {
                 let array = column.as_any().downcast_ref::<Int64Array>()?;
-                array.value(row_idx) as f64
+                Some(array.value(row_idx) as f64)
             }
             _ => None,
-        }.into()
+        }
     }
 
     /// Normalize features based on configuration

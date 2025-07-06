@@ -5,6 +5,7 @@
 
 use crate::{Result, RanError};
 use crate::integration::*;
+use crate::integration::data_bus::FilterOperator;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc, Mutex};
@@ -630,7 +631,7 @@ impl EnhancedEventSystem {
                         Ok(result) => {
                             // Handle produced events
                             for produced_event in result.produced_events {
-                                self.emit_event(produced_event).await?;
+                                Box::pin(self.emit_event(produced_event)).await?;
                             }
                         }
                         Err(e) => {
@@ -920,4 +921,3 @@ impl EventStorageBackend for InMemoryEventStorage {
         Ok(None)
     }
 }
-"#

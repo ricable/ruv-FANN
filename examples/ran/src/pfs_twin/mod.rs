@@ -5,11 +5,13 @@ pub mod spatial_temporal;
 pub mod cuda_kernels;
 
 use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::visit::EdgeRef;
 use petgraph::algo::dijkstra;
 use std::collections::HashMap;
 use ndarray::{Array2, Array3, ArrayView2, s};
 
 /// Main PFS Twin module for Digital Twin neural models
+#[derive(Debug)]
 pub struct PfsTwin {
     /// Network topology graph
     topology: NetworkTopology,
@@ -307,7 +309,7 @@ impl SpatialTemporalConv {
         let spatial_out = spatial_features.dot(&self.spatial_weights);
         
         // Apply temporal convolution
-        let mut temporal_out = Array2::zeros(spatial_out.dim());
+        let mut temporal_out: Array2<f32> = Array2::zeros(spatial_out.dim());
         
         for t in 0..self.window_size {
             let temporal_slice = temporal_features.index_axis(ndarray::Axis(0), t);
@@ -378,7 +380,7 @@ impl MessagePassingNN {
             // Apply message function
             let concat_array = ArrayView2::from_shape((1, concat_features.len()), &concat_features).unwrap();
             let message = concat_array.dot(&self.message_weights);
-            messages.push(message.to_vec());
+            messages.push(message.into_raw_vec());
         }
         
         messages
@@ -387,7 +389,7 @@ impl MessagePassingNN {
     /// Aggregate messages per node
     fn aggregate_messages(&self, messages: &[Vec<f32>], edge_index: &[(usize, usize)], num_nodes: usize) -> Array2<f32> {
         let message_dim = messages[0].len();
-        let mut aggregated = Array2::zeros((num_nodes, message_dim));
+        let mut aggregated: Array2<f32> = Array2::zeros((num_nodes, message_dim));
         let mut counts = vec![0.0; num_nodes];
         
         for (i, &(_, dst)) in edge_index.iter().enumerate() {

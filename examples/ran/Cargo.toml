@@ -14,6 +14,14 @@ name = "enhanced_neural_swarm_demo_standalone"
 path = "src/bin/enhanced_neural_swarm_demo_standalone.rs"
 
 [[bin]]
+name = "enhanced_neural_swarm_demo_fixed"
+path = "src/bin/enhanced_neural_swarm_demo_fixed.rs"
+
+[[bin]]
+name = "enhanced_neural_swarm_demo_minimal"
+path = "src/bin/enhanced_neural_swarm_demo_minimal.rs"
+
+[[bin]]
 name = "epic0_foundation_demo"
 path = "src/bin/epic0_foundation_demo.rs"
 
@@ -122,6 +130,10 @@ path = "src/bin/standalone_demo.rs"
 name = "standalone_quality_assurance_demo"
 path = "src/bin/standalone_quality_assurance_demo.rs"
 
+[[bin]]
+name = "test_frontend"
+path = "src/bin/test_frontend.rs"
+
 
 [dependencies]
 # Core ruv-FANN dependency
@@ -133,7 +145,7 @@ rand_distr = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-uuid = { version = "1.0", features = ["v4"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
 
@@ -169,10 +181,24 @@ candle-nn = "0.9"
 nalgebra = "0.32"
 petgraph = "0.6"
 
+# Missing data processing dependencies
+memmap2 = "0.9"
+quick-xml = "0.31"
+arrow = "53.0"
+ndarray-rand = "0.14"
+# packed_simd_2 = "0.3"  # Incompatible with stable Rust, removed
+wide = "0.7"  # Stable SIMD alternative
+crossbeam = "0.8"
+reqwest = { version = "0.11", features = ["json"] }
+zstd = "0.13"
+half = "2.3"
+regex = "1.10"
+fastrand = "2.0"
+mimalloc = "0.1"
+
 # Data formats and serialization
 bincode = "1.3"
-parquet = "52.0"
-arrow = "52.0"
+csv = "1.3"
 anyhow = "1.0"
 
 [build-dependencies]

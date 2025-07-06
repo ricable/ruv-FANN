@@ -42,7 +42,7 @@ pub struct DTMMobility {
 }
 
 /// Mobility state detection
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MobilityState {
     Stationary,
     Walking,
@@ -127,9 +127,12 @@ impl DTMMobility {
         // Detect mobility state
         let mobility_state = self.detect_mobility_state(speed_estimate);
         
+        // Get current cell for transition (use empty string if no previous cell)
+        let current_cell = self.get_current_cell(user_id).unwrap_or_default();
+        
         // Update cell transition graph
         self.cell_transition_graph.write().unwrap()
-            .add_transition(user_id, cell_id);
+            .add_transition(user_id, &current_cell, cell_id);
         
         // Create or update user profile
         let profile = UserMobilityProfile {
@@ -150,7 +153,7 @@ impl DTMMobility {
         let cell_graph = self.cell_transition_graph.read().unwrap();
         
         // Get user's current state
-        let current_cell = self.get_current_cell(user_id)?;
+        let current_cell = self.get_current_cell(user_id).ok_or_else(|| "User not found".to_string())?;
         let mobility_state = self.get_mobility_state(user_id)?;
         
         // Use trajectory predictor with graph attention
@@ -220,6 +223,13 @@ impl DTMMobility {
     }
     
     // Helper methods
+    
+    /// Get current cell for a user
+    fn get_current_cell(&self, user_id: &str) -> Option<String> {
+        // This would typically query a database or cache
+        // For now, return None to indicate no previous cell
+        None
+    }
     
     fn estimate_speed_from_doppler(&self, doppler_shift: f64) -> f64 {
         // Convert Doppler shift to speed estimate

@@ -300,3 +300,31 @@ pub enum DType {
 pub fn var_builder_from_varmap(var_map: &VarMap, dtype: DType, device: &Device) -> VarBuilder {
     VarBuilder::new(*device)
 }
+
+/// AdamW optimizer
+pub struct AdamW {
+    params: Vec<Tensor>,
+    lr: f32,
+    beta1: f32,
+    beta2: f32,
+    eps: f32,
+    weight_decay: f32,
+}
+
+impl AdamW {
+    pub fn new(params: Vec<Tensor>) -> Result<Self> {
+        Ok(Self {
+            params,
+            lr: 0.001,
+            beta1: 0.9,
+            beta2: 0.999,
+            eps: 1e-8,
+            weight_decay: 0.01,
+        })
+    }
+    
+    pub fn step(&mut self) -> Result<()> {
+        // Simple placeholder implementation
+        Ok(())
+    }
+}

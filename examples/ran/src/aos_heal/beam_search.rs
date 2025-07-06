@@ -36,15 +36,19 @@ impl AdvancedBeamSearch {
 
     /// Perform beam search to find optimal action sequence
     pub fn search(&self, initial_state: &NetworkState, target_state: &NetworkState) -> Vec<HealingAction> {
-        let mut beam = BinaryHeap::new();
+        let mut beam: BinaryHeap<ScoredCandidate> = BinaryHeap::new();
         let initial_candidate = SearchCandidate::new(Vec::new(), initial_state.clone(), 0.0);
-        beam.push(initial_candidate);
+        let scored_candidate = ScoredCandidate {
+            candidate: initial_candidate,
+            score: 0.0,
+        };
+        beam.push(scored_candidate);
         
         let mut best_sequence = Vec::new();
         let mut best_score = f32::NEG_INFINITY;
         
         for depth in 0..self.max_depth {
-            let mut next_beam = BinaryHeap::new();
+            let mut next_beam: BinaryHeap<ScoredCandidate> = BinaryHeap::new();
             let mut current_candidates = Vec::new();
             
             // Extract all candidates from current beam
@@ -56,8 +60,8 @@ impl AdvancedBeamSearch {
             }
             
             // Generate successors for each candidate
-            for candidate in current_candidates {
-                let successors = self.generate_successors(&candidate, target_state);
+            for scored_candidate in current_candidates {
+                let successors = self.generate_successors(&scored_candidate.candidate, target_state);
                 
                 for successor in successors {
                     let score = self.evaluate_candidate(&successor, target_state);
@@ -415,7 +419,7 @@ impl AdvancedBeamSearch {
 }
 
 /// Network state representation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NetworkState {
     pub performance_score: f32,
     pub max_utilization: f32,
@@ -423,6 +427,12 @@ pub struct NetworkState {
     pub blocked_cells: Vec<String>,
     pub active_alarms: Vec<String>,
     pub resource_usage: HashMap<String, f32>,
+}
+
+impl PartialOrd for NetworkState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl NetworkState {
@@ -438,12 +448,37 @@ impl NetworkState {
     }
 }
 
+impl Eq for NetworkState {}
+
+impl Ord for NetworkState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.performance_score.partial_cmp(&other.performance_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
 /// Search candidate with action sequence and state
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SearchCandidate {
     pub actions: Vec<HealingAction>,
     pub current_state: NetworkState,
     pub cost: f32,
+}
+
+impl Eq for SearchCandidate {}
+
+impl PartialOrd for SearchCandidate {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SearchCandidate {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.cost.partial_cmp(&other.cost)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| self.current_state.cmp(&other.current_state))
+    }
 }
 
 impl SearchCandidate {
@@ -463,23 +498,25 @@ pub struct ScoredCandidate {
     pub score: f32,
 }
 
-impl Eq for ScoredCandidate {}
-
 impl PartialEq for ScoredCandidate {
     fn eq(&self, other: &Self) -> bool {
         self.score == other.score
     }
 }
 
-impl Ord for ScoredCandidate {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.score.partial_cmp(&other.score).unwrap_or(Ordering::Equal)
+impl Eq for ScoredCandidate {}
+
+impl PartialOrd for ScoredCandidate {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
-impl PartialOrd for ScoredCandidate {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+impl Ord for ScoredCandidate {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Higher scores should come first in the heap
+        other.score.partial_cmp(&self.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 

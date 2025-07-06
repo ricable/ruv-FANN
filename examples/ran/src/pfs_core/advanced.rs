@@ -152,7 +152,8 @@ pub fn blocked_matmul(a: &AdvancedTensor, b: &AdvancedTensor, c: &mut AdvancedTe
 /// SIMD-optimized vector operations
 pub mod simd_ops {
     use super::*;
-    use packed_simd_2::*;
+    // use packed_simd_2::*;  // Replaced with wide crate
+use wide::f32x8;
     
     /// Vectorized addition with explicit SIMD
     pub fn simd_add(a: &AdvancedTensor, b: &AdvancedTensor, result: &mut AdvancedTensor) {
@@ -171,10 +172,16 @@ pub mod simd_ops {
             // Process 8 elements at a time with SIMD
             for i in 0..chunks {
                 let offset = i * 8;
-                let a_vec = f32x8::from_slice_unaligned(&std::slice::from_raw_parts(a_ptr.add(offset), 8));
-                let b_vec = f32x8::from_slice_unaligned(&std::slice::from_raw_parts(b_ptr.add(offset), 8));
+                let a_slice = std::slice::from_raw_parts(a_ptr.add(offset), 8);
+                let b_slice = std::slice::from_raw_parts(b_ptr.add(offset), 8);
+                let a_array: [f32; 8] = [a_slice[0], a_slice[1], a_slice[2], a_slice[3], a_slice[4], a_slice[5], a_slice[6], a_slice[7]];
+                let b_array: [f32; 8] = [b_slice[0], b_slice[1], b_slice[2], b_slice[3], b_slice[4], b_slice[5], b_slice[6], b_slice[7]];
+                let a_vec = f32x8::new(a_array);
+                let b_vec = f32x8::new(b_array);
                 let result_vec = a_vec + b_vec;
-                result_vec.write_to_slice_unaligned(&mut std::slice::from_raw_parts_mut(result_ptr.add(offset), 8));
+                let result_array = result_vec.to_array();
+                let result_slice = std::slice::from_raw_parts_mut(result_ptr.add(offset), 8);
+                result_slice.copy_from_slice(&result_array);
             }
             
             // Handle remainder
@@ -200,10 +207,20 @@ pub mod simd_ops {
             // Process 8 elements at a time with SIMD
             for i in 0..chunks {
                 let offset = i * 8;
-                let a_vec = f32x8::from_slice_unaligned(&std::slice::from_raw_parts(a_ptr.add(offset), 8));
-                let b_vec = f32x8::from_slice_unaligned(&std::slice::from_raw_parts(b_ptr.add(offset), 8));
+                let a_slice = std::slice::from_raw_parts(a_ptr.add(offset), 8);
+                let b_slice = std::slice::from_raw_parts(b_ptr.add(offset), 8);
+                let a_vec = f32x8::new([
+                    a_slice[0], a_slice[1], a_slice[2], a_slice[3],
+                    a_slice[4], a_slice[5], a_slice[6], a_slice[7]
+                ]);
+                let b_vec = f32x8::new([
+                    b_slice[0], b_slice[1], b_slice[2], b_slice[3],
+                    b_slice[4], b_slice[5], b_slice[6], b_slice[7]
+                ]);
                 let result_vec = a_vec * b_vec;
-                result_vec.write_to_slice_unaligned(&mut std::slice::from_raw_parts_mut(result_ptr.add(offset), 8));
+                let result_array = result_vec.to_array();
+                let result_slice = std::slice::from_raw_parts_mut(result_ptr.add(offset), 8);
+                result_slice.copy_from_slice(&result_array);
             }
             
             // Handle remainder
@@ -227,9 +244,15 @@ pub mod simd_ops {
             
             for i in 0..chunks {
                 let offset = i * 8;
-                let input_vec = f32x8::from_slice_unaligned(&std::slice::from_raw_parts(input_ptr.add(offset), 8));
+                let input_slice = std::slice::from_raw_parts(input_ptr.add(offset), 8);
+                let input_vec = f32x8::new([
+                    input_slice[0], input_slice[1], input_slice[2], input_slice[3],
+                    input_slice[4], input_slice[5], input_slice[6], input_slice[7]
+                ]);
                 let result_vec = input_vec.max(zeros);
-                result_vec.write_to_slice_unaligned(&mut std::slice::from_raw_parts_mut(output_ptr.add(offset), 8));
+                let result_array = result_vec.to_array();
+                let output_slice = std::slice::from_raw_parts_mut(output_ptr.add(offset), 8);
+                output_slice.copy_from_slice(&result_array);
             }
             
             // Handle remainder
@@ -264,7 +287,7 @@ impl TensorPool {
     }
     
     pub fn get_tensor(&mut self, shape: Vec<usize>) -> AdvancedTensor {
-        let size = shape.iter().product();
+        let size: usize = shape.iter().product();
         
         // Try to find a matching pool
         for (i, pool_size) in self.sizes.iter().enumerate() {

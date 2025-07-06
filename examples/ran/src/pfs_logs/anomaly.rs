@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use ndarray::{Array1, Array2, Array3, Axis};
+use ndarray::{Array1, Array2, Array3, Axis, s};
 use serde::{Deserialize, Serialize};
 use crate::pfs_logs::parser::LogEntry;
 
@@ -664,7 +664,7 @@ impl OneClassSVM {
             let kernel_value = match self.kernel {
                 KernelType::Linear => sv.dot(features),
                 KernelType::RBF => {
-                    let diff = sv - features;
+                    let diff = sv.to_owned() - features;
                     let distance_squared = diff.mapv(|x| x.powi(2)).sum();
                     (-self.gamma * distance_squared).exp()
                 }

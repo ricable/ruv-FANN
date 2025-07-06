@@ -2,15 +2,22 @@
 //! 
 //! Provides optimized mappings and calculations for common LTE/5G KPIs
 
-use arrow::datatypes::DataType;
 use std::collections::HashMap;
+
+/// Simple data type enumeration to replace Arrow DataType
+#[derive(Debug, Clone)]
+pub enum SimpleDataType {
+    Float32,
+    Int64,
+    String,
+}
 
 /// KPI information structure
 #[derive(Debug, Clone)]
 pub struct KpiInfo {
     pub name: String,
     pub description: String,
-    pub data_type: DataType,
+    pub data_type: SimpleDataType,
     pub unit: String,
     pub category: KpiCategory,
     pub formula: Option<KpiFormula>,
@@ -66,7 +73,7 @@ impl KpiMappings {
         mappings.insert("rrc_conn_success_rate".to_string(), KpiInfo {
             name: "RRC Connection Success Rate".to_string(),
             description: "Percentage of successful RRC connection establishments".to_string(),
-            data_type: DataType::Float32,
+            data_type: SimpleDataType::Float32,
             unit: "percentage".to_string(),
             category: KpiCategory::Accessibility,
             formula: Some(KpiFormula::Ratio {
@@ -79,7 +86,7 @@ impl KpiMappings {
         mappings.insert("scell_add_success_rate".to_string(), KpiInfo {
             name: "SCell Addition Success Rate".to_string(),
             description: "Percentage of successful secondary cell additions".to_string(),
-            data_type: DataType::Float32,
+            data_type: SimpleDataType::Float32,
             unit: "percentage".to_string(),
             category: KpiCategory::Accessibility,
             formula: Some(KpiFormula::Ratio {
@@ -92,7 +99,7 @@ impl KpiMappings {
         mappings.insert("handover_success_rate".to_string(), KpiInfo {
             name: "Handover Success Rate".to_string(),
             description: "Percentage of successful handovers".to_string(),
-            data_type: DataType::Float32,
+            data_type: SimpleDataType::Float32,
             unit: "percentage".to_string(),
             category: KpiCategory::Mobility,
             formula: Some(KpiFormula::Ratio {
@@ -105,7 +112,7 @@ impl KpiMappings {
         mappings.insert("dl_throughput".to_string(), KpiInfo {
             name: "Downlink Throughput".to_string(),
             description: "Average downlink throughput".to_string(),
-            data_type: DataType::Float32,
+            data_type: SimpleDataType::Float32,
             unit: "Mbps".to_string(),
             category: KpiCategory::Throughput,
             formula: Some(KpiFormula::Custom("pmPdcpVolDlDrb * 8 / 1000000 / 900".to_string())),
@@ -114,7 +121,7 @@ impl KpiMappings {
         mappings.insert("ul_throughput".to_string(), KpiInfo {
             name: "Uplink Throughput".to_string(),
             description: "Average uplink throughput".to_string(),
-            data_type: DataType::Float32,
+            data_type: SimpleDataType::Float32,
             unit: "Mbps".to_string(),
             category: KpiCategory::Throughput,
             formula: Some(KpiFormula::Custom("pmPdcpVolUlDrb * 8 / 1000000 / 900".to_string())),
@@ -152,9 +159,9 @@ impl KpiMappings {
                 name: counter.to_string(),
                 description: format!("Raw counter: {}", counter),
                 data_type: if counter.contains("Vol") || counter.contains("Thp") {
-                    DataType::Int64
+                    SimpleDataType::Int64
                 } else {
-                    DataType::Int64
+                    SimpleDataType::Int64
                 },
                 unit: if counter.contains("Vol") {
                     "bytes".to_string()
